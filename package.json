@@ -1,6 +1,7 @@
 {
-  "name": "vue-education",
+  "name": "vue-education-thesis",
   "version": "0.0.0",
+  "description": "An educational web platform for doctors and patients with AI-supported modules, developed for my Master's Thesis.",
   "private": true,
   "type": "module",
   "scripts": {

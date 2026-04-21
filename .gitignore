@@ -42,3 +42,9 @@ __screenshots__/
 *.env
 *.env.*
 !.env.example
+
+# Debug
+.vscode/launch.json
+
+# Thesis-specific exclusions
+Instructions.md
