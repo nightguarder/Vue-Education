@@ -1,0 +1,23 @@
+{
+  "name": "Vue Education",
+  "short_name": "Vue Edu",
+  "theme_color": "#42b883",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "any",
+  "scope": "/",
+  "start_url": "/",
+  "description": "Educational web platform for doctors and patients",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
