@@ -1,41 +1,50 @@
-# Educational AI-Supported Platform for Doctors and Patients (Thesis Project)
+# Vue Education Skeleton
 
 ## About
-This project is part of a Master's Thesis focused on the design and development of a software system to support psychiatric care with a primary emphasis on **sensitive data protection**.
+A clean, reusable skeleton for building privacy-focused educational platforms tailored for two primary user groups:
+1. **Doctors**: Clinical tools and educational resources.
+2. **Patients**: Health information and support modules.
 
-The platform addresses the critical need to utilize modern Generative AI tools (such as Large Language Models) in clinical practice without the risks associated with sending sensitive patient data to cloud providers. It implements a secure, **locally operated (on-premise)** environment for patient education and clinical support.
+This skeleton provides a pre-configured frontend foundation with Vue 3 (Vapor Mode), PWA support, and TypeScript setup, ready for extension with local AI modules and a custom Python backend. The full application will be deployed online via Wasmer.
 
-### Key Research Areas:
-- **Privacy-First AI**: Implementation of LLMs on local hardware to ensure data remains offline.
-- **Multimodal Education**: Utilizing Speech-to-Text (STT) and Text-to-Speech (TTS) technologies to generate audiovisual educational materials.
-- **Clinical Integration**: Providing tools for doctors to transcribe patient sessions and deliver personalized medical information to doctors and patients.
-- **Proof of Concept**: Demonstrating that advanced AI tools can be efficiently and economically operated within a private medical practice.
-- **User Experience**: Ensuring the platform is intuitive and user-friendly for both doctors and patients.
-- **Security** : All AI models and data processing are performed locally - on premise, ensuring no data leaves your device. This guarantees privacy and security for all users.
+### Core Features:
+- **Privacy-First Design**: Architecture supports local AI processing to keep sensitive data offline.
+- **Multimodal Education**: Planned support for Speech-to-Text (STT) and Text-to-Speech (TTS) for audiovisual materials.
+- **Doctor/Patient Portals**: Structured to support role-specific modules for clinical and patient use.
+- **PWA Ready**: Offline support via service worker implementation.
+- **Modern Stack**: Vue 3.6 Vapor Mode, Vite 8, Vitest, and oxfmt for high performance and developer efficiency.
 ---
 
 ## Technical Stack
-This project utilizes an experimental and modern technical stack to achieve high performance and developer efficiency:
 
-- **Framework**: [Vue 3.6 (Vapor Mode)](https://github.com/vuejs/core-vapor) - Utilizing the latest experimental performance-oriented compilation strategy for Vue.
-- **Package Manager**: [pnpm](https://pnpm.io/) - Fast, disk space efficient package management.
-- **Formating**: [oxfmtr](https://github.com/oxc-project/oxc) - A highly experimental and high-performance Rust-based formatter.
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **Testing**: [Vitest](https://vitest.dev/) - A Vite-native unit testing framework.
+### Frontend (this skeleton)
+- **Framework**: [Vue 3.6 (Vapor Mode)](https://github.com/vuejs/core-vapor) - Experimental high-performance compilation strategy.
+- **Package Manager**: [pnpm](https://pnpm.io/)
+- **Formatter**: [oxfmt](https://github.com/oxc-project/oxc) - Rust-based, high-performance.
+- **Build Tool**: [Vite 8](https://vitejs.dev/)
+- **Testing**: [Vitest](https://vitest.dev/)
+
+### Planned Backend
+- **Runtime**: Python (to be written from scratch)
+- **Hosting**: [Wasmer.io](https://wasmer.io) - Supports Python, Node.js, and WASM deployments.
+- **Database**: MySQL (or PostgreSQL)
+- **Local AI**: Planned integration with local LLM inference (OMLX / ONNX Runtime Web) for privacy-first features.
 
 ---
 
 ## Prerequisites
 
-To run this platform locally, you will need to set up the following components:
+### Frontend Development
+- **Node.js**: v20.19.0+ or v22.12.0+
+- **pnpm**: Install via `npm install -g pnpm`
 
-- **PHP 8.3+**: The backend logic is powered by PHP. Ensure you have PHP 8.3 or higher installed to handle API requests and database interactions.
-- **MySQL Database (via Colima or Docker)**: The platform requires a MySQL server. It is recommended to use **Colima** or **Docker** to spin up a local MySQL instance.
-- **OMLX (Local AI Server)**: OMLX is a local AI model server built on Apple's **MLX** framework, designed for high-performance inference on Apple Silicon. It provides the Local inference capabilities for the platform, ensuring all data processing remains private and offline. Open-source project at [https://github.com/jundot/omlx](https://github.com/jundot/omlx)
-- **Node.js & pnpm**: The frontend is built with Vue 3 and Vite. You will need Node.js and the **pnpm** package manager for installation and development.
-- **Browser Support (WASM/WebGPU)**: Since the platform utilizes **ONNX Runtime Web** for local Text-to-Speech (TTS) and other AI tasks, a modern browser with WebAssembly (WASM) support is recommended.
+### Full-Stack / Backend (Planned)
+- **Python**: v3.10+ (for the new backend)
+- **Database**: MySQL or PostgreSQL (local or Docker)
+- **Wasmer CLI** (optional): For local simulation of Wasmer deployment - `curl https://get.wasmer.io -sSfL | sh`
+- **Browser**: Modern browser with WebAssembly (WASM) support for local AI features.
 
-__Note:__ You can install most of the above tools using `brew` on macOS.
+__Note:__ On macOS, most tools can be installed via `brew`.
 ---
 
 ## Project Setup
@@ -73,4 +82,4 @@ pnpm format
 ---
 
 ## Keywords
-`education`, `content generation`, `language models`, `local operation`, `medicine`, `neural networks`, `software engineering`, `web application`
+`education`, `vue3`, `skeleton`, `pwa`, `privacy-first`, `local-ai`, `doctors`, `patients`, `wasmer`
