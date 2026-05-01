@@ -1,11 +1,17 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import AppLayout from './components/layout/AppLayout.vue'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <BApp><AppLayout></AppLayout></BApp>
+  
 </template>
 
-<style scoped></style>
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+}
+</style>
