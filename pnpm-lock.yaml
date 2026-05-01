@@ -23,9 +23,24 @@ importers:
 
   .:
     dependencies:
+      '@vueuse/core':
+        specifier: ^14.3.0
+        version: 14.3.0(vue@3.6.0-beta.10(typescript@6.0.3))
+      bootstrap:
+        specifier: ^5.3.8
+        version: 5.3.8(@popperjs/core@2.11.8)
+      bootstrap-icons:
+        specifier: ^1.13.1
+        version: 1.13.1
+      bootstrap-vue-next:
+        specifier: ^0.44.7
+        version: 0.44.7(@vueuse/core@14.3.0(vue@3.6.0-beta.10(typescript@6.0.3)))(bootstrap@5.3.8(@popperjs/core@2.11.8))(vue-router@4.6.4(vue@3.6.0-beta.10(typescript@6.0.3)))(vue@3.6.0-beta.10(typescript@6.0.3))
       vue:
         specifier: beta
         version: 3.6.0-beta.10(typescript@6.0.3)
+      vue-router:
+        specifier: ^4.6.4
+        version: 4.6.4(vue@3.6.0-beta.10(typescript@6.0.3))
     devDependencies:
       '@tsconfig/node24':
         specifier: ^24.0.4
@@ -285,6 +300,12 @@ packages:
       '@noble/hashes':
         optional: true
 
+  '@floating-ui/core@1.7.5':
+    resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
+
+  '@floating-ui/utils@0.2.11':
+    resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
+
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
@@ -449,6 +470,9 @@ packages:
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
+  '@popperjs/core@2.11.8':
+    resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
+
   '@rolldown/binding-android-arm64@1.0.0-rc.16':
     resolution: {integrity: sha512-rhY3k7Bsae9qQfOtph2Pm2jZEA+s8Gmjoz4hhmx70K9iMQ/ddeae+xhRQcM5IuVx5ry1+bGfkvMn7D6MJggVSA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -577,6 +601,9 @@ packages:
   '@types/tough-cookie@4.0.5':
     resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
 
+  '@types/web-bluetooth@0.0.21':
+    resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
+
   '@vitejs/plugin-vue@6.0.6':
     resolution: {integrity: sha512-u9HHgfrq3AjXlysn0eINFnWQOJQLO9WN6VprZ8FXl7A2bYisv3Hui9Ij+7QZ41F/WYWarHjwBbXtD7dKg3uxbg==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -653,6 +680,9 @@ packages:
   '@vue/compiler-vapor@3.6.0-beta.10':
     resolution: {integrity: sha512-9DqhmWnv06wefy/gBIix0bfphEDba0La96tt8jbNZb9+CbnbB0VyNCz70ynXyhbvrM5K9yhGcIqNfhkNhcepAQ==}
 
+  '@vue/devtools-api@6.6.4':
+    resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
+
   '@vue/devtools-core@8.1.1':
     resolution: {integrity: sha512-bCCsSABp1/ot4j8xJEycM6Mtt2wbuucfByr6hMgjbYhrtlscOJypZKvy8f1FyWLYrLTchB5Qz216Lm92wfbq0A==}
     peerDependencies:
@@ -703,6 +733,19 @@ packages:
       vue:
         optional: true
 
+  '@vueuse/core@14.3.0':
+    resolution: {integrity: sha512-aHfz47g0ZhMtTVHmIzMVpJy8ePhhOy68GY5bv110+5DVtZ+W7BsOx+m61UNQqfrWyPztIHIanWa3E2tib3NFIw==}
+    peerDependencies:
+      vue: ^3.5.0
+
+  '@vueuse/metadata@14.3.0':
+    resolution: {integrity: sha512-BwxmbAzwAVF50+MW57GXOUEV61nFBGnlBvrTqj49PqWJu3uw7hdu72ztXeZ33RdZtDY6kO+bfCAE1PCn88Tktw==}
+
+  '@vueuse/shared@14.3.0':
+    resolution: {integrity: sha512-bZpge9eSXwa4ToSiqJ7j6KRwhAsneMFoSz3LMWKQDkqimm3D/tbFlrklrs/IOqC8tEcYmXQZJ6N0UrjhBirVCg==}
+    peerDependencies:
+      vue: ^3.5.0
+
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
@@ -752,6 +795,42 @@ packages:
 
   birpc@2.9.0:
     resolution: {integrity: sha512-KrayHS5pBi69Xi9JmvoqrIgYGDkD6mcSe/i6YKi3w5kekCLzrX4+nawcXqrj2tIp50Kw/mT/s3p+GVK0A0sKxw==}
+
+  bootstrap-icons@1.13.1:
+    resolution: {integrity: sha512-ijombt4v6bv5CLeXvRWKy7CuM3TRTuPEuGaGKvTV5cz65rQSY8RQ2JcHt6b90cBBAC7s8fsf2EkQDldzCoXUjw==}
+
+  bootstrap-vue-next@0.44.7:
+    resolution: {integrity: sha512-da3EndWRzB+PVkcDszvv3HZJRnejcrC2J43BxX+e5yhflHnIEKFcpdJlRLDxxIva+FeJLqETC8IKl6/13VoLAg==}
+    peerDependencies:
+      '@floating-ui/vue': '*'
+      '@internationalized/date': '*'
+      '@vueuse/core': '*'
+      '@vueuse/integrations': '*'
+      bootstrap: ^5.3.0
+      focus-trap: '*'
+      reka-ui: '*'
+      vue: ^3.5.13
+      vue-router: '*'
+    peerDependenciesMeta:
+      '@floating-ui/vue':
+        optional: true
+      '@internationalized/date':
+        optional: true
+      '@vueuse/core':
+        optional: true
+      '@vueuse/integrations':
+        optional: true
+      focus-trap:
+        optional: true
+      reka-ui:
+        optional: true
+      vue-router:
+        optional: true
+
+  bootstrap@5.3.8:
+    resolution: {integrity: sha512-HP1SZDqaLDPwsNiqRqi5NcP0SSXciX2s9E+RyqJIIqGo+vJeN5AJVM98CXmW/Wux0nQ5L7jeWUdplCEf0Ee+tg==}
+    peerDependencies:
+      '@popperjs/core': ^2.11.8
 
   brace-expansion@2.1.0:
     resolution: {integrity: sha512-TN1kCZAgdgweJhWWpgKYrQaMNHcDULHkWwQIspdtjV4Y5aurRdZpjAqn6yX3FPqTA9ngHCc4hJxMAMgGfve85w==}
@@ -1472,6 +1551,11 @@ packages:
   vue-component-type-helpers@2.2.12:
     resolution: {integrity: sha512-YbGqHZ5/eW4SnkPNR44mKVc6ZKQoRs/Rux1sxC6rdwXb4qpbOSYfDr9DsTHolOTGmIKgM9j141mZbBeg05R1pw==}
 
+  vue-router@4.6.4:
+    resolution: {integrity: sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg==}
+    peerDependencies:
+      vue: ^3.5.0
+
   vue-tsc@3.2.7:
     resolution: {integrity: sha512-zc1tL3HoQni1zGTGrwBVRQb7rGP5SWdu/m4rGB6JcnAC5MT5LFZIxF7Y+EJEnt4hGF23d60rXH7gRjHGb5KQQQ==}
     hasBin: true
@@ -1798,6 +1882,12 @@ snapshots:
 
   '@exodus/bytes@1.15.0': {}
 
+  '@floating-ui/core@1.7.5':
+    dependencies:
+      '@floating-ui/utils': 0.2.11
+
+  '@floating-ui/utils@0.2.11': {}
+
   '@isaacs/cliui@8.0.2':
     dependencies:
       string-width: 5.1.2
@@ -1905,6 +1995,8 @@ snapshots:
 
   '@polka/url@1.0.0-next.29': {}
 
+  '@popperjs/core@2.11.8': {}
+
   '@rolldown/binding-android-arm64@1.0.0-rc.16':
     optional: true
 
@@ -1988,6 +2080,8 @@ snapshots:
       undici-types: 7.16.0
 
   '@types/tough-cookie@4.0.5': {}
+
+  '@types/web-bluetooth@0.0.21': {}
 
   '@vitejs/plugin-vue@6.0.6(vite@8.0.9(@types/node@24.12.2)(terser@5.46.1))(vue@3.6.0-beta.10(typescript@6.0.3))':
     dependencies:
@@ -2116,6 +2210,8 @@ snapshots:
       estree-walker: 2.0.2
       source-map-js: 1.2.1
 
+  '@vue/devtools-api@6.6.4': {}
+
   '@vue/devtools-core@8.1.1(vue@3.6.0-beta.10(typescript@6.0.3))':
     dependencies:
       '@vue/devtools-kit': 8.1.1
@@ -2181,6 +2277,19 @@ snapshots:
       typescript: 6.0.3
       vue: 3.6.0-beta.10(typescript@6.0.3)
 
+  '@vueuse/core@14.3.0(vue@3.6.0-beta.10(typescript@6.0.3))':
+    dependencies:
+      '@types/web-bluetooth': 0.0.21
+      '@vueuse/metadata': 14.3.0
+      '@vueuse/shared': 14.3.0(vue@3.6.0-beta.10(typescript@6.0.3))
+      vue: 3.6.0-beta.10(typescript@6.0.3)
+
+  '@vueuse/metadata@14.3.0': {}
+
+  '@vueuse/shared@14.3.0(vue@3.6.0-beta.10(typescript@6.0.3))':
+    dependencies:
+      vue: 3.6.0-beta.10(typescript@6.0.3)
+
   abbrev@2.0.0: {}
 
   acorn@8.16.0:
@@ -2211,6 +2320,21 @@ snapshots:
       require-from-string: 2.0.2
 
   birpc@2.9.0: {}
+
+  bootstrap-icons@1.13.1: {}
+
+  bootstrap-vue-next@0.44.7(@vueuse/core@14.3.0(vue@3.6.0-beta.10(typescript@6.0.3)))(bootstrap@5.3.8(@popperjs/core@2.11.8))(vue-router@4.6.4(vue@3.6.0-beta.10(typescript@6.0.3)))(vue@3.6.0-beta.10(typescript@6.0.3)):
+    dependencies:
+      '@floating-ui/core': 1.7.5
+      bootstrap: 5.3.8(@popperjs/core@2.11.8)
+      vue: 3.6.0-beta.10(typescript@6.0.3)
+    optionalDependencies:
+      '@vueuse/core': 14.3.0(vue@3.6.0-beta.10(typescript@6.0.3))
+      vue-router: 4.6.4(vue@3.6.0-beta.10(typescript@6.0.3))
+
+  bootstrap@5.3.8(@popperjs/core@2.11.8):
+    dependencies:
+      '@popperjs/core': 2.11.8
 
   brace-expansion@2.1.0:
     dependencies:
@@ -2849,6 +2973,11 @@ snapshots:
   vscode-uri@3.1.0: {}
 
   vue-component-type-helpers@2.2.12: {}
+
+  vue-router@4.6.4(vue@3.6.0-beta.10(typescript@6.0.3)):
+    dependencies:
+      '@vue/devtools-api': 6.6.4
+      vue: 3.6.0-beta.10(typescript@6.0.3)
 
   vue-tsc@3.2.7(typescript@6.0.3):
     dependencies:
