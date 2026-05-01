@@ -1,5 +1,10 @@
 /* Vue interact with service worker */
 export function registerSW() {
+  // Skip service worker registration in development mode
+  if (import.meta.env.DEV) {
+    return
+  }
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
