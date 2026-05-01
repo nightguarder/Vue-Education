@@ -9,6 +9,7 @@ import AppLayout from './components/layout/AppLayout.vue'
 </template>
 
 <style lang="scss">
+@use "sass:color";
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 body {
@@ -45,8 +46,8 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: darken($primary-color, 10%);
-  border-color: darken($primary-color, 10%);
+  background-color: color.adjust($primary-color, $lightness: -10%);
+  border-color: color.adjust($primary-color, $lightness: -10%);
 }
 
 .btn-success {

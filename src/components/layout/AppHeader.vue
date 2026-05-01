@@ -1,7 +1,10 @@
 <template>
   <BNavbar toggleable="lg" type="light" class="site-header" container="lg">
     <BNavbarBrand>
-      <RouterLink to="/" class="navbar-brand">Vzdělávací platforma</RouterLink>
+      <RouterLink to="/" class="navbar-brand d-flex align-items-center">
+        <img src="/icons/icon-logo-transparent.png" alt="Logo" height="32" class="me-2" />
+        <span>Vzdělávací platforma</span>
+      </RouterLink>
     </BNavbarBrand>
 
     <BNavbarToggle target="navbarNav" />

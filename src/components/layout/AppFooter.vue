@@ -8,6 +8,10 @@ const currentYear = computed(() => new Date().getFullYear())
     <BContainer>
       <BRow align-v="center">
         <BCol class="text-start">
+          <div class="d-flex align-items-center mb-3">
+            <img src="/icons/icon-logo-transparent.png" alt="Logo" height="40" class="me-2" />
+            <h5 class="mb-0 fw-bold">Vzdělávací platforma</h5>
+          </div>
           <p class="mb-1">
             <strong>&copy; {{ currentYear }} Cyril Steger</strong>
           </p>
@@ -18,20 +22,29 @@ const currentYear = computed(() => new Date().getFullYear())
             <li>Česká republika</li>
           </ul>
         </BCol>
-        <BCol class="text-end">
-          <BNavbarNav class="justify-content-end">
+    <BCol class="text-end">
+          <BNav vertical class="footer-nav">
             <BNavItem>
-              <RouterLink to="/" class="footer-link"> Domů </RouterLink>
-            </BNavItem>
-            <BNavItem>
-              <RouterLink to="/patients/home" class="footer-link"> Portál pro pacienty </RouterLink>
-            </BNavItem>
-            <BNavItem>
-              <RouterLink to="/doctors/education" class="footer-link">
-                Portál pro lékaře
+              <RouterLink to="/" class="footer-link" aria-label="Home">
+                Home
               </RouterLink>
             </BNavItem>
-          </BNavbarNav>
+            <BNavItem>
+              <RouterLink to="/patients/home" class="footer-link" aria-label="Patient Portal">
+                Patient Portal
+              </RouterLink>
+            </BNavItem>
+            <BNavItem>
+              <RouterLink to="/doctors/education" class="footer-link" aria-label="Doctor Portal">
+                Doctor Portal
+              </RouterLink>
+            </BNavItem>
+            <BNavItem>
+              <RouterLink to="/settings" class="footer-link" aria-label="Settings">
+                Settings
+              </RouterLink>
+            </BNavItem>
+          </BNav>
         </BCol>
       </BRow>
     </BContainer>
