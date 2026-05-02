@@ -22,16 +22,7 @@
                   <span class="badge bg-primary ms-1">{{ infographics.length }}</span>
                 </a>
               </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link"
-                  :class="{ active: activeTab === 'audio' }"
-                  @click="activeTab = 'audio'"
-                >
-                  <i class="bi bi-music-note-list me-1"></i> Audio Podcasts
-                  <span class="badge bg-success ms-1">{{ episodes.length }}</span>
-                </a>
-              </li>
+
             </ul>
 
             <!-- Loading State -->
@@ -115,60 +106,7 @@
               </div>
             </div>
 
-            <!-- Audio Podcasts Tab -->
-            <div v-else-if="activeTab === 'audio'">
-              <div v-if="episodes.length === 0" class="text-center py-5">
-                <i class="bi bi-music-note-list display-4 text-muted mb-4"></i>
-                <h5>No audio podcasts found</h5>
-                <p class="text-muted">Check back later for audio content.</p>
-              </div>
 
-              <div v-else class="d-flex flex-column gap-3">
-                <div v-for="item in episodes" :key="item.id" class="card shadow-sm border-0">
-                  <div class="card-body">
-                    <h5 class="card-title">{{ item.title }}</h5>
-                    <div class="mb-3">
-                      <span
-                        v-for="tag in item.tags"
-                        :key="tag"
-                        class="badge bg-light text-dark border me-1 mb-1"
-                      >
-                        {{ tag }}
-                      </span>
-                    </div>
-
-                    <!-- Audio Player -->
-                    <div class="audio-player mb-3">
-                      <audio
-                        controls
-                        class="w-100"
-                        :src="getAssetUrl(item.asset_url)"
-                        @canplay="cacheAudio(item)"
-                      >
-                        Your browser does not support the audio element.
-                      </audio>
-                    </div>
-
-                    <div class="d-flex gap-2 flex-wrap">
-                      <a
-                        :href="getAssetUrl(item.asset_url)"
-                        download
-                        class="btn btn-sm btn-outline-success"
-                      >
-                        <i class="bi bi-download me-1"></i> Download
-                      </a>
-                      <button
-                        v-if="item.sources && item.sources.length > 0"
-                        class="btn btn-sm btn-outline-info"
-                        @click="showSources(item)"
-                      >
-                        <i class="bi bi-journal-text me-1"></i> Sources
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -244,7 +182,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-// Types
+
 interface ResourceItem {
   id: string
   title: string
@@ -279,13 +217,13 @@ interface Manifest {
 // State
 const activeTab = ref<'infographics' | 'audio'>('infographics')
 const infographics = ref<ResourceItem[]>([])
-const episodes = ref<ResourceItem[]>([])
 const sources = ref<Record<string, Source>>({})
 const loading = ref(true)
 const error = ref<string | null>(null)
 const thumbnailError = ref<Record<string, boolean>>({})
-const githubURL =
-  import.meta.env.VITE_GITHUB_REPO_URL || 'https://github.com/nightguarder/Vue-Education-Materials'
+
+// Cache storage for thumbnails and audio
+const cache = ref<Map<string, Blob>>(new Map())
 
 // Modal state
 const selectedItem = ref<ResourceItem | null>(null)
@@ -300,7 +238,7 @@ async function fetchManifest() {
   error.value = null
 
   try {
-    const response = await fetch(githubURL)
+    const response = await fetch(import.meta.env.VITE_GITHUB_URL)
 
     if (!response.ok) {
       throw new Error(`Failed to fetch manifest: ${response.statusText}`)
@@ -309,8 +247,10 @@ async function fetchManifest() {
     const manifest: Manifest = await response.json()
 
     infographics.value = manifest.infographics || []
-    episodes.value = manifest.episodes || []
     sources.value = manifest.sources || {}
+
+    // Preload thumbnails for offline caching
+    preloadThumbnails()
   } catch (err: any) {
     error.value = `Failed to load resources: ${err.message}. Please check your connection.`
     console.error('[Resources] Manifest fetch failed:', err)
@@ -329,28 +269,17 @@ function getThumbnailUrl(item: ResourceItem): string {
   if (item.thumbnail_url) {
     return item.thumbnail_url
   }
-
+  
   // Fallback to asset_url if thumbnail_url is missing
   if (!item.asset_url) return ''
   return item.asset_url
 }
 
-function handleThumbnailError(itemId: string) {
-  thumbnailError.value[itemId] = true
-}
-
-function preloadAssets() {
-  // Cache infographic images
+function preloadThumbnails() {
+  // Cache infographic thumbnails
   infographics.value.forEach((item) => {
-    if (item.asset_url) {
-      cacheAsset(getAssetUrl(item.asset_url))
-    }
-  })
-
-  // Cache audio files
-  episodes.value.forEach((item) => {
-    if (item.asset_url) {
-      cacheAsset(getAssetUrl(item.asset_url))
+    if (item.thumbnail_url) {
+      cacheAsset(item.thumbnail_url)
     }
   })
 }
@@ -370,9 +299,8 @@ async function cacheAsset(url: string) {
   }
 }
 
-function handleImageError(event: Event) {
-  const img = event.target as HTMLImageElement
-  img.style.display = 'none'
+function handleThumbnailError(itemId: string) {
+  thumbnailError.value[itemId] = true
 }
 
 function showSources(item: ResourceItem) {
@@ -393,12 +321,6 @@ function viewContent(item: ResourceItem) {
   if (item.content_path) {
     const url = getAssetUrl(item.content_path)
     window.open(url, '_blank')
-  }
-}
-
-function cacheAudio(item: ResourceItem) {
-  if (item.asset_url) {
-    cacheAsset(getAssetUrl(item.asset_url))
   }
 }
 </script>

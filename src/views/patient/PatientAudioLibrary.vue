@@ -186,11 +186,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-// GitHub repository configuration
-const REPO_OWNER = 'nightguarder'
-const REPO_NAME = 'Vue-Education-Materials'
-const BRANCH = 'main'
-const BASE_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}`
+
 
 interface ResourceItem {
   id: string
@@ -242,6 +238,9 @@ const sources = ref<Record<string, Source>>({})
 // Cache for offline
 const cache = ref<Map<string, Blob>>(new Map())
 
+// Derive base asset URL from manifest URL
+const baseAssetUrl = import.meta.env.VITE_GITHUB_URL.replace(/manifest\.json$/, '')
+
 onMounted(async () => {
   await fetchManifest()
 })
@@ -258,7 +257,7 @@ async function fetchManifest() {
   error.value = null
 
   try {
-    const manifestUrl = `${BASE_URL}/manifest.json`
+    const manifestUrl = import.meta.env.VITE_GITHUB_URL
     const response = await fetch(manifestUrl)
 
     if (!response.ok) {
@@ -279,7 +278,7 @@ async function fetchManifest() {
 function getAssetUrl(assetPath?: string): string {
   if (!assetPath) return ''
   if (assetPath.startsWith('http')) return assetPath
-  return `${BASE_URL}${assetPath}`
+  return `${baseAssetUrl}${assetPath}`
 }
 
 function playEpisode(item: ResourceItem) {

@@ -279,30 +279,62 @@ async function loadWorksheets() {
   error.value = null
 
   try {
+    // Fetch templates from database (public only for guest mode)
+    const templatesRes = await fetch('/api/templates?public=1')
+    const templates = await templatesRes.json()
+
     if (!patientId.value.trim()) {
-      // Guest mode - use generic worksheets
+      // Guest mode - use database templates as generic worksheets
       isGuestMode.value = true
-      worksheets.value = genericWorksheets
+      worksheets.value = templates.map((t: any) => ({
+        id: t.template_id,
+        title: t.title,
+        type: t.type,
+        fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
+        status: 'available' as const,
+        assignedAt: new Date().toISOString()
+      }))
       return
     }
 
     isGuestMode.value = false
 
-    // TODO (MySQL): Replace with API call to education-patients database
-    // const response = await fetch(`/api/education-patients/worksheets/${patientId.value}`)
-    // worksheets.value = await response.json()
-
-    // For now: check localStorage for patient-specific worksheets
-    const key = `patient_worksheets_${patientId.value}`
-    const stored = localStorage.getItem(key)
-
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      worksheets.value = Array.isArray(parsed) ? parsed : []
+    // Fetch patient-specific worksheets from API
+    const response = await fetch(`/api/worksheets?patient_id=${encodeURIComponent(patientId.value)}`)
+    
+    if (response.ok) {
+      const patientWorksheets = await response.json()
+      
+      if (patientWorksheets.length > 0) {
+        worksheets.value = patientWorksheets.map((pw: any) => ({
+          id: pw.template_id,
+          title: pw.title,
+          type: pw.type,
+          fields: typeof pw.fields === 'string' ? JSON.parse(pw.fields) : pw.fields,
+          status: pw.status,
+          assignedAt: pw.assigned_at
+        }))
+      } else {
+        // Fall back to templates if no personalized worksheets
+        worksheets.value = templates.map((t: any) => ({
+          id: t.template_id,
+          title: t.title,
+          type: t.type,
+          fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
+          status: 'available' as const,
+          assignedAt: new Date().toISOString()
+        }))
+      }
     } else {
-      // No personalized worksheets found
-      worksheets.value = []
-      error.value = 'No worksheets found for this ID. Try guest mode or ask your therapist to assign worksheets.'
+      // Fall back to templates
+      worksheets.value = templates.map((t: any) => ({
+        id: t.template_id,
+        title: t.title,
+        type: t.type,
+        fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
+        status: 'available' as const,
+        assignedAt: new Date().toISOString()
+      }))
     }
   } catch (err: any) {
     error.value = `Failed to load worksheets: ${err.message}`

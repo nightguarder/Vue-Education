@@ -86,13 +86,11 @@ import { ref, onMounted } from 'vue'
 import { useStressReliefAI } from '../../composables/useStressReliefAI'
 
 const {
-  isReady,
-  isDownloading,
-  downloadProgress,
-  loadModel,
   generateDailyQuote,
   getRandomQuote,
-  isDownloadAllowed
+  isDownloadAllowed,
+  isDownloading,
+  downloadProgress
 } = useStressReliefAI()
 
 const currentQuote = ref('')
@@ -122,23 +120,8 @@ onMounted(async () => {
     return
   }
 
-  // Start background model load (force WebGPU for patients)
-  try {
-    const loaded = await loadModel(true)
-    if (loaded) {
-      // Phase 4: Generate new quote
-      const newQuote = await generateDailyQuote()
-      currentQuote.value = newQuote
-      isAiQuote.value = true
-      
-      // Save to cache
-      localStorage.setItem('daily_quote', newQuote)
-      localStorage.setItem('daily_quote_date', today)
-      localStorage.setItem('daily_quote_type', 'ai')
-    }
-  } catch (e) {
-    console.warn('[PatientHome] Background AI load failed', e)
-  }
+  // Automatic model loading removed - quote generation requires manual trigger
+  console.log('[Home] Skipping automatic AI model load')
 })
 </script>
 
