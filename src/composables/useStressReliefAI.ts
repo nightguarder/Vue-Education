@@ -107,6 +107,7 @@ export function useStressReliefAI() {
       }
       env.allowLocalModels = false
       env.allowRemoteModels = true
+      env.useBrowserCache = true
 
       console.log('[StressReliefAI] Loading browser model:', BROWSER_MODEL)
       browserPipeline = await pipeline('text-generation', BROWSER_MODEL, {

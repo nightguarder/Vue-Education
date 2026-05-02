@@ -27,11 +27,20 @@
           </BDropdownItem>
         </BNavItemDropdown>
         <BNavItemDropdown text="Doctor Portal">
+          <BDropdownItem :to="'/doctor/home'">
+            <i class="bi bi-house me-2"></i>Home
+          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/chat'">
+            <i class="bi bi-chat-dots me-2"></i>Chats
+          </BDropdownItem>
           <BDropdownItem :to="'/doctor/education'">
             <i class="bi bi-search me-2"></i>Literature Search
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/research'">
             <i class="bi bi-journal-bookmark me-2"></i>Research Notebook
+          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/transcription'">
+            <i class="bi bi-mic me-2"></i>Audio Transcription
           </BDropdownItem>
           <BDropdownDivider />
           <BDropdownItem :to="'/settings'">
