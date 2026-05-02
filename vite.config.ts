@@ -33,6 +33,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:8888',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/omlx/, '/v1')
+      },
+      '/api': {
+        target: 'http://127.0.0.1:8080', // Local PHP server
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   },

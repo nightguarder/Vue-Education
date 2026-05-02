@@ -48,3 +48,6 @@ __screenshots__/
 
 # Thesis-specific exclusions
 Instructions.md
+
+# Backend / Database
+backend/
