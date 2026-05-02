@@ -9,9 +9,35 @@
     <BCollapse id="navbarNav" is-nav class="justify-content-end">
       <BNavbarNav>
         <RouterLink class="nav-link px-3" to="/">Home</RouterLink>
-        <RouterLink class="nav-link px-3" to="/patients/home">Patient Portal</RouterLink>
-        <RouterLink class="nav-link px-3" to="/patients/resources">Resources</RouterLink>
-        <RouterLink class="nav-link px-3" to="/doctors/education">Doctor Portal</RouterLink>
+        <BNavItemDropdown text="Patient Portal">
+          <BDropdownItem :to="'/patients/home'">
+            <i class="bi bi-house me-2"></i>Dashboard
+          </BDropdownItem>
+          <BDropdownItem :to="'/patients/worksheets'">
+            <i class="bi bi-journal-text me-2"></i>Worksheets
+          </BDropdownItem>
+          <BDropdownItem :to="'/patients/resources'">
+            <i class="bi bi-images me-2"></i>Infographics
+          </BDropdownItem>
+          <BDropdownItem :to="'/patients/audio'">
+            <i class="bi bi-headphones me-2"></i>Audio Library
+          </BDropdownItem>
+          <BDropdownItem :to="'/patients/stress'">
+            <i class="bi bi-heart me-2"></i>Stress Relief
+          </BDropdownItem>
+        </BNavItemDropdown>
+        <BNavItemDropdown text="Doctor Portal">
+          <BDropdownItem :to="'/doctor/education'">
+            <i class="bi bi-search me-2"></i>Literature Search
+          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/research'">
+            <i class="bi bi-journal-bookmark me-2"></i>Research Notebook
+          </BDropdownItem>
+          <BDropdownDivider />
+          <BDropdownItem :to="'/settings'">
+            <i class="bi bi-gear me-2"></i>Settings
+          </BDropdownItem>
+        </BNavItemDropdown>
       </BNavbarNav>
     </BCollapse>
   </BNavbar>
@@ -19,7 +45,7 @@
 
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
-import { BNavbar, BNavbarToggle, BCollapse, BNavbarNav, BNavbarBrand } from "bootstrap-vue-next";
+import { BNavbar, BNavbarToggle, BCollapse, BNavbarNav, BNavbarBrand, BNavItemDropdown, BDropdownItem, BDropdownDivider } from "bootstrap-vue-next";
 </script>
 
 <style scoped>

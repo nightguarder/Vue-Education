@@ -294,7 +294,7 @@ async function generateAndSaveDailyQuote() {
   
   if (isReady.value) {
     try {
-      const quote = await generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.', true)
+      const quote = await generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.')
       saveDailyQuote(quote, true)
     } catch (e) {
       console.warn('[StressRelief] Daily quote generation failed:', e)
@@ -314,7 +314,7 @@ async function relieveStress() {
 
   // Generate AI response based on stress text
   try {
-    const response = await generateResponse(stressText.value, true)
+    const response = await generateResponse(stressText.value)
     aiResponse.value = response
     saveDailyQuote(response, true)
   } catch (e) {
