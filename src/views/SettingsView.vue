@@ -244,7 +244,7 @@ const availableModels = ref<{ value: string; text: string }[]>([
 const loadingModels = ref(false)
 
 const config = reactive({
-  port: '8888',
+  port: import.meta.env.VITE_OMLX_PORT || '8888',
   apiKey: import.meta.env.VITE_OMLX_API_KEY || '',
   model: 'gemma-4-e4b-it-OptiQ-4bit',
   transModel: 'gemma-4-e4b-it-OptiQ-4bit'

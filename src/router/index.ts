@@ -50,6 +50,15 @@ const router = createRouter({
     },
     // Doctor portal routes
     {
+      path: '/doctor',
+      redirect: '/doctor/home'
+    },
+    {
+      path: '/doctor/home',
+      name: 'doctor-home',
+      component: () => import('../views/doctor/DoctorLanding.vue'),
+    },
+    {
       path: '/doctor/education',
       name: 'doctor-education',
       component: () => import('../views/doctor/DoctorEducation.vue'),
@@ -58,6 +67,21 @@ const router = createRouter({
       path: '/doctor/research',
       name: 'doctor-research',
       component: () => import('../views/doctor/ResearchNotebook.vue'),
+    },
+    {
+      path: '/doctor/transcription',
+      name: 'doctor-transcription',
+      component: () => import('../views/doctor/TranscriptionView.vue'),
+    },
+    {
+      path: '/doctor/chat',
+      name: 'doctor-chat',
+      component: () => import('../views/doctor/ChatView.vue'),
+    },
+    {
+      path: '/doctor/chat/:chatId',
+      name: 'doctor-chat-detail',
+      component: () => import('../views/doctor/ChatView.vue'),
     },
     // Settings route
     {
