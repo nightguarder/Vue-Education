@@ -10,6 +10,10 @@ const router = createRouter({
     },
     // Patient portal routes
     {
+      path: '/patients',
+      redirect: '/patients/home'
+    },
+    {
       path: '/patients/home',
       name: 'patient-home',
       component: () => import('../views/patient/PatientHome.vue'),
@@ -32,7 +36,12 @@ const router = createRouter({
     {
       path: '/patients/audio',
       name: 'patient-audio',
-      component: () => import('../views/patient/PatientAudio.vue'),
+      component: () => import('../views/patient/PatientAudioLibrary.vue'),
+    },
+    {
+      path: '/patients/infographics',
+      name: 'patient-infographics',
+      component: () => import('../views/patient/PatientResources.vue'),
     },
     {
       path: '/patients/feedback',
@@ -40,6 +49,16 @@ const router = createRouter({
       component: () => import('../views/patient/PatientFeedback.vue'),
     },
     // Doctor portal routes
+    {
+      path: '/doctor/education',
+      name: 'doctor-education',
+      component: () => import('../views/doctor/DoctorEducation.vue'),
+    },
+    {
+      path: '/doctor/research',
+      name: 'doctor-research',
+      component: () => import('../views/doctor/ResearchNotebook.vue'),
+    },
     // Settings route
     {
       path: '/settings',
