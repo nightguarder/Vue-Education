@@ -1,5 +1,14 @@
 <template>
   <div class="container-fluid py-3 px-3">
+    <!-- Breadcrumb / Back Navigation -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <router-link to="/patients/home" class="text-decoration-none text-muted d-flex align-items-center">
+          <i class="bi bi-arrow-left me-2"></i> Zpět na přehled
+        </router-link>
+      </div>
+    </div>
+    
     <div class="row justify-content-center">
       <div class="col-12 col-md-10 col-lg-8">
         <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
@@ -180,8 +189,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { useStressReliefAI } from '../../composables/useStressReliefAI'
-import { useSpeechToText } from '../../composables/useSpeechToText'
+import { useStressReliefAI } from '@/composables/useStressReliefAI'
+import { useSpeechToText } from '@/composables/useSpeechToText'
 
 const {
   isLoading: aiLoading,
@@ -243,7 +252,10 @@ onMounted(() => {
   if (textarea) textarea.focus()
 
   // Load AI model in background, forcing WebGPU for patients
-  loadModel(true).catch((err) => {
+  loadModel(true).then(async () => {
+    console.log('[StressRelief] AI model loaded, generating daily quote...')
+    await generateAndSaveDailyQuote()
+  }).catch((err) => {
     console.warn('[StressRelief] AI model load warning:', err)
   })
 
@@ -272,6 +284,31 @@ async function toggleVoiceRecording() {
   }
 }
 
+function getTodayKey(): string {
+  const today = new Date().toISOString().split('T')[0]
+  return `daily_quote_${today}`
+}
+
+function saveDailyQuote(quote: string, isAi = true) {
+  const todayKey = getTodayKey()
+  localStorage.setItem(todayKey, quote)
+  localStorage.setItem(`${todayKey}_is_ai`, String(isAi))
+}
+
+async function generateAndSaveDailyQuote() {
+  const todayKey = getTodayKey()
+  if (localStorage.getItem(todayKey)) return
+  
+  if (isReady.value) {
+    try {
+      const quote = await generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.', true)
+      saveDailyQuote(quote, true)
+    } catch (e) {
+      console.warn('[StressRelief] Daily quote generation failed:', e)
+    }
+  }
+}
+
 async function relieveStress() {
   if (!stressText.value.trim()) return
 
@@ -286,6 +323,7 @@ async function relieveStress() {
   try {
     const response = await generateResponse(stressText.value, true)
     aiResponse.value = response
+    saveDailyQuote(response, true)
   } catch (e) {
     console.error('[StressRelief] Response generation failed:', e)
     aiResponse.value = getRandomQuote()

@@ -1,29 +1,28 @@
 <template>
   <BNavbar toggleable="lg" type="light" class="site-header" container="lg">
     <BNavbarBrand>
-      <RouterLink to="/" class="navbar-brand d-flex align-items-center">
-        <img src="/icons/icon-logo-transparent.png" alt="Logo" height="32" class="me-2" />
-        <span>Vzdělávací platforma</span>
-      </RouterLink>
+      <RouterLink to="/" class="navbar-brand">Education Platform</RouterLink>
     </BNavbarBrand>
 
     <BNavbarToggle target="navbarNav" />
 
     <BCollapse id="navbarNav" is-nav class="justify-content-end">
       <BNavbarNav>
-        <RouterLink class="nav-link px-3" to="/">Domů</RouterLink>
-        <RouterLink class="nav-link px-3" to="/patients/home">Portál pro pacienty</RouterLink>
-        <RouterLink class="nav-link px-3" to="/doctors/education">Portál pro lékaře</RouterLink>
+        <RouterLink class="nav-link px-3" to="/">Home</RouterLink>
+        <RouterLink class="nav-link px-3" to="/patients/home">Patient Portal</RouterLink>
+        <RouterLink class="nav-link px-3" to="/patients/resources">Resources</RouterLink>
+        <RouterLink class="nav-link px-3" to="/doctors/education">Doctor Portal</RouterLink>
       </BNavbarNav>
     </BCollapse>
   </BNavbar>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink } from "vue-router";
+import { BNavbar, BNavbarToggle, BCollapse, BNavbarNav, BNavbarBrand } from "bootstrap-vue-next";
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .site-header {
   background-color: #ffffff;
   border-bottom: 1px solid #e2e8f0;
@@ -31,7 +30,7 @@ import { RouterLink } from 'vue-router'
 }
 .navbar-brand {
   font-weight: 600;
-  color: $primary-color;
+  color: #2c5282;
   text-decoration: none;
   font-size: 1.25rem;
 }
@@ -42,10 +41,10 @@ import { RouterLink } from 'vue-router'
 }
 .nav-link:hover,
 .nav-link:focus {
-  color: $primary-color !important;
+  color: #2c5282 !important;
 }
 .router-link-active {
-  color: $primary-color !important;
+  color: #2c5282 !important;
   font-weight: 500;
 }
 </style>

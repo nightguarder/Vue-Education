@@ -1,5 +1,14 @@
 <template>
-  <div class="container-fluid py-4">
+  <div class="container-fluid py-3 px-3">
+    <!-- Breadcrumb / Back Navigation -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <router-link to="/patients/home" class="text-decoration-none text-muted d-flex align-items-center">
+          <i class="bi bi-arrow-left me-2"></i> Zpět na přehled
+        </router-link>
+      </div>
+    </div>
+    
     <div class="row justify-content-center">
       <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm border-0 rounded-4">
@@ -73,12 +82,14 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
+@use "sass:color";
+
 .btn-primary {
   background-color: $primary-color;
   border-color: $primary-color;
   &:hover {
-    background-color: darken($primary-color, 10%);
-    border-color: darken($primary-color, 10%);
+    background-color: color.adjust($primary-color, $lightness: -10%);
+    border-color: color.adjust($primary-color, $lightness: -10%);
   }
 }
 </style>

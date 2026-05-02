@@ -1,5 +1,14 @@
 <template>
-  <div class="container-fluid py-4">
+  <div class="container-fluid py-3 px-3">
+    <!-- Breadcrumb / Back Navigation -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <router-link to="/patients/home" class="text-decoration-none text-muted d-flex align-items-center">
+          <i class="bi bi-arrow-left me-2"></i> Zpět na přehled
+        </router-link>
+      </div>
+    </div>
+    
     <div class="row justify-content-center">
       <div class="col-md-8">
         <div class="card shadow-sm border-0">
