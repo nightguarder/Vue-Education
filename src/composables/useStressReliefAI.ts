@@ -1,4 +1,4 @@
-// Composable for Worry Shredder AI responses via local OMLX API with browser model fallback
+// Composable for Stress Relief AI responses via local OMLX API with browser model fallback
 import { ref } from 'vue'
 
 const isLoading = ref(false)
@@ -19,7 +19,9 @@ function getOmlxUrl(): string {
 
 // Browser model fallback
 let browserPipeline: any = null
-const BROWSER_MODEL = 'RunwayML/LaMini-Flan-T5-248M'
+const BROWSER_MODEL = 'postgrammar/LFM2.5-1.2B-Thinking-ONNX' // Approximation for LFM2.5 1.2B Thinking
+const downloadProgress = ref(0)
+const isDownloading = ref(false)
 
 // Fallback responses if both OMLX and browser model fail
 const fallbackResponses = [
@@ -74,36 +76,63 @@ function cleanResponse(text: string): string {
     .trim()
 }
 
-export function useWorryAI() {
-  async function loadModel(): Promise<boolean> {
-    // Try OMLX first
-    try {
-      const url = getOmlxUrl()
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OMLX_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: OMLX_DEFAULT_MODEL,
-          messages: [{ role: 'user', content: 'test' }],
-          max_tokens: 5
-        })
-      })
+export function useStressReliefAI() {
+  function isDownloadAllowed(): boolean {
+    if (!navigator.onLine) return false
+    
+    // Check if WebGPU is supported
+    if (!navigator.gpu) return false
 
-      if (response.ok || response.status === 400) {
-        isReady.value = true
-        console.log('[WorryAI] OMLX service available')
-        return true
+    const conn = (navigator as any).connection
+    if (conn) {
+      if (conn.saveData) return false
+      if (['slow-2g', '2g', '3g'].includes(conn.effectiveType)) return false
+    }
+    return true
+  }
+
+  async function loadModel(forceWebGPU = false): Promise<boolean> {
+    // Try OMLX first if not forced WebGPU
+    if (!forceWebGPU) {
+      try {
+        const url = getOmlxUrl()
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OMLX_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: OMLX_DEFAULT_MODEL,
+            messages: [{ role: 'user', content: 'test' }],
+            max_tokens: 5
+          })
+        })
+
+        if (response.ok || response.status === 400) {
+          isReady.value = true
+          console.log('[StressReliefAI] OMLX service available')
+          return true
+        }
+      } catch {
+        console.log('[StressReliefAI] OMLX unavailable, trying browser model...')
       }
-    } catch {
-      console.log('[WorryAI] OMLX unavailable, trying browser model...')
     }
 
-    // Fallback: Load browser-based model
+    if (browserPipeline) {
+      isReady.value = true
+      return true
+    }
+
+    if (!isDownloadAllowed()) {
+      console.log('[StressReliefAI] Download skipped due to network constraints or missing WebGPU.')
+      return false
+    }
+
+    // Fallback: Load browser-based model (WebGPU)
     try {
       isLoading.value = true
+      isDownloading.value = true
       const { pipeline, env } = await import(
         /* @vite-ignore */
         '@huggingface/transformers'
@@ -116,61 +145,82 @@ export function useWorryAI() {
       env.allowLocalModels = false
       env.allowRemoteModels = true
 
-      console.log('[WorryAI] Loading browser model:', BROWSER_MODEL)
-      browserPipeline = await pipeline('text2text-generation', BROWSER_MODEL, {
-        dtype: 'q8',
+      console.log('[StressReliefAI] Loading browser model:', BROWSER_MODEL)
+      browserPipeline = await pipeline('text-generation', BROWSER_MODEL, {
+        device: 'webgpu',
+        dtype: 'q4f16', // Ensure correct quantized loading from Transformers.js
+        progress_callback: (x: any) => {
+          if (x.status === 'progress' && x.progress) {
+            downloadProgress.value = x.progress
+          }
+        }
       })
 
-      console.log('[WorryAI] Browser model loaded successfully')
+      console.log('[StressReliefAI] Browser model loaded successfully')
       isReady.value = true
+      isDownloading.value = false
       return true
     } catch (e: any) {
-      console.warn('[WorryAI] Browser model load failed:', e.message)
+      console.warn('[StressReliefAI] Browser model load failed:', e.message)
       isReady.value = false
+      isDownloading.value = false
       return false
     } finally {
       isLoading.value = false
     }
   }
 
-  async function generateResponse(worry: string): Promise<string> {
-    const normalizedWorry = worry.trim()
-    if (!normalizedWorry) return getRandomQuote()
+  function parseThought(text: string): string {
+    return text.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim()
+  }
 
-    // Try OMLX first
-    try {
-      const response = await callOmlxApi(normalizedWorry)
-      if (response && response.length > 5) {
-        return cleanResponse(response)
+  async function generateResponse(stressText: string, forceWebGPU = false): Promise<string> {
+    const normalizedText = stressText.trim()
+    if (!normalizedText) return getRandomQuote()
+
+    // Try OMLX first if not forced WebGPU
+    if (!forceWebGPU) {
+      try {
+        const response = await callOmlxApi(normalizedText)
+        if (response && response.length > 5) {
+          return cleanResponse(parseThought(response))
+        }
+      } catch (e) {
+        console.log('[StressReliefAI] OMLX failed, trying browser model...')
       }
-    } catch (e) {
-      console.log('[WorryAI] OMLX failed, trying browser model...')
     }
 
     // Fallback to browser model
     if (browserPipeline) {
       try {
-        const theme = detectTheme(normalizedWorry)
+        const theme = detectTheme(normalizedText)
         let prompt = theme && themePrompts[theme]
           ? themePrompts[theme]
           : 'Generate a short inspirational quote about inner peace and strength. Max 2 sentences.'
 
+        // Using simple prompting for base models, or if it's LFM, we can structure it if we know the chat template.
+        // Assuming simple completion for now.
         const output = await browserPipeline(prompt, {
-          max_new_tokens: 30,
-          temperature: 0.9,
+          max_new_tokens: 50,
+          temperature: 0.7,
           repetition_penalty: 1.1,
           do_sample: true,
-          top_p: 0.95
         })
 
         let quote = output[0]?.generated_text || ''
-        quote = cleanResponse(quote)
+        
+        // Remove the prompt from the generated text if it's there
+        if (quote.startsWith(prompt)) {
+          quote = quote.substring(prompt.length).trim()
+        }
+
+        quote = cleanResponse(parseThought(quote))
 
         if (quote && quote.length > 5) {
           return quote
         }
       } catch (e: any) {
-        console.warn('[WorryAI] Browser model generation failed:', e.message)
+        console.warn('[StressReliefAI] Browser model generation failed:', e.message)
       }
     }
 
@@ -178,7 +228,7 @@ export function useWorryAI() {
   }
 
   async function generateDailyQuote(): Promise<string> {
-    return generateResponse('')
+    return generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.', true)
   }
 
   function getRandomQuote(): string {
@@ -193,12 +243,15 @@ export function useWorryAI() {
   return {
     isLoading,
     isReady,
+    isDownloading,
+    downloadProgress,
     error,
     loadModel,
     generateResponse,
     generateDailyQuote,
     getRandomQuote,
-    isModelReady
+    isModelReady,
+    isDownloadAllowed
   }
 }
 

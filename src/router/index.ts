@@ -20,9 +20,9 @@ const router = createRouter({
       component: () => import('../views/patient/PatientWorksheets.vue'),
     },
     {
-      path: '/patients/worry',
-      name: 'patient-worry',
-      component: () => import('../views/patient/PatientWorryShredder.vue'),
+      path: '/patients/stress-relief',
+      name: 'patient-stress-relief',
+      component: () => import('../views/patient/PatientStressRelief.vue'),
     },
     {
       path: '/patients/infographics',
