@@ -195,7 +195,6 @@ import { useSpeechToText } from '@/composables/useSpeechToText'
 const {
   isLoading: aiLoading,
   isReady,
-  loadModel,
   generateResponse,
   getRandomQuote,
 } = useStressReliefAI()
@@ -251,13 +250,7 @@ onMounted(() => {
   const textarea = document.getElementById('stressInput')
   if (textarea) textarea.focus()
 
-  // Load AI model in background, forcing WebGPU for patients
-  loadModel(true).then(async () => {
-    console.log('[StressRelief] AI model loaded, generating daily quote...')
-    await generateAndSaveDailyQuote()
-  }).catch((err) => {
-    console.warn('[StressRelief] AI model load warning:', err)
-  })
+  // Automatic AI model loading removed
 
   // Load speech model
   loadSpeechModel().catch((err) => {

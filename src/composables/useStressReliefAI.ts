@@ -1,29 +1,19 @@
-// Composable for Stress Relief AI responses via local OMLX API with browser model fallback
+// Composable for Stress Relief AI responses via browser-based WebGPU models
 import { ref } from 'vue'
 
 const isLoading = ref(false)
 const isReady = ref(false)
 const error = ref<string | null>(null)
 
-// OMLX API configuration
-const OMLX_PORT = import.meta.env.VITE_OMLX_PORT || '8888'
-const OMLX_API_KEY = import.meta.env.VITE_OMLX_API_KEY || '5004'
-const OMLX_DEFAULT_MODEL = import.meta.env.VITE_DEFAULT_MODEL || 'gemma-4-e4b-it-OptiQ-4bit'
-
-function getOmlxUrl(): string {
-  const isProd = import.meta.env.PROD
-  return isProd
-    ? `http://127.0.0.1:${OMLX_PORT}/v1/chat/completions`
-    : '/omlx/chat/completions'
-}
-
-// Browser model fallback
+// WebGPU browser model (LFM2.5)
 let browserPipeline: any = null
 const BROWSER_MODEL = 'postgrammar/LFM2.5-1.2B-Thinking-ONNX' // Approximation for LFM2.5 1.2B Thinking
 const downloadProgress = ref(0)
 const isDownloading = ref(false)
 
-// Fallback responses if both OMLX and browser model fail
+
+
+// Fallback responses if browser model fails
 const fallbackResponses = [
   "Your feelings are valid. It's okay to feel what you're feeling.",
   "Every day is a new opportunity. You're stronger than you think.",
@@ -91,34 +81,7 @@ export function useStressReliefAI() {
     return true
   }
 
-  async function loadModel(forceWebGPU = false): Promise<boolean> {
-    // Try OMLX first if not forced WebGPU
-    if (!forceWebGPU) {
-      try {
-        const url = getOmlxUrl()
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OMLX_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: OMLX_DEFAULT_MODEL,
-            messages: [{ role: 'user', content: 'test' }],
-            max_tokens: 5
-          })
-        })
-
-        if (response.ok || response.status === 400) {
-          isReady.value = true
-          console.log('[StressReliefAI] OMLX service available')
-          return true
-        }
-      } catch {
-        console.log('[StressReliefAI] OMLX unavailable, trying browser model...')
-      }
-    }
-
+  async function loadModel(): Promise<boolean> {
     if (browserPipeline) {
       isReady.value = true
       return true
@@ -129,7 +92,7 @@ export function useStressReliefAI() {
       return false
     }
 
-    // Fallback: Load browser-based model (WebGPU)
+    // Load browser-based WebGPU model
     try {
       isLoading.value = true
       isDownloading.value = true
@@ -174,23 +137,11 @@ export function useStressReliefAI() {
     return text.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim()
   }
 
-  async function generateResponse(stressText: string, forceWebGPU = false): Promise<string> {
+  async function generateResponse(stressText: string): Promise<string> {
     const normalizedText = stressText.trim()
     if (!normalizedText) return getRandomQuote()
 
-    // Try OMLX first if not forced WebGPU
-    if (!forceWebGPU) {
-      try {
-        const response = await callOmlxApi(normalizedText)
-        if (response && response.length > 5) {
-          return cleanResponse(parseThought(response))
-        }
-      } catch (e) {
-        console.log('[StressReliefAI] OMLX failed, trying browser model...')
-      }
-    }
-
-    // Fallback to browser model
+    // Use browser model
     if (browserPipeline) {
       try {
         const theme = detectTheme(normalizedText)
@@ -198,8 +149,7 @@ export function useStressReliefAI() {
           ? themePrompts[theme]
           : 'Generate a short inspirational quote about inner peace and strength. Max 2 sentences.'
 
-        // Using simple prompting for base models, or if it's LFM, we can structure it if we know the chat template.
-        // Assuming simple completion for now.
+        // Using simple prompting for LFM2.5 base model
         const output = await browserPipeline(prompt, {
           max_new_tokens: 50,
           temperature: 0.7,
@@ -228,7 +178,7 @@ export function useStressReliefAI() {
   }
 
   async function generateDailyQuote(): Promise<string> {
-    return generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.', true)
+    return generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.')
   }
 
   function getRandomQuote(): string {
@@ -255,53 +205,3 @@ export function useStressReliefAI() {
   }
 }
 
-async function callOmlxApi(
-  prompt: string,
-  maxTokens: number = 30,
-  temperature: number = 0.9
-): Promise<string> {
-  const url = getOmlxUrl()
-  const messages = [
-    {
-      role: 'system',
-      content: 'You are a helpful assistant. Do not output any internal monologue, thinking filter words, or meta-text. Output ONLY the final requested result directly.'
-    },
-    { role: 'user', content: prompt }
-  ]
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OMLX_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: OMLX_DEFAULT_MODEL,
-        messages,
-        max_tokens: maxTokens,
-        temperature,
-        stream: false
-      }),
-      signal: controller.signal
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data.choices?.[0]?.message?.content || ''
-  } catch (error: any) {
-    clearTimeout(timeoutId)
-    if (error.name === 'AbortError') {
-      throw new Error('AI request timed out')
-    }
-    throw error
-  }
-}
