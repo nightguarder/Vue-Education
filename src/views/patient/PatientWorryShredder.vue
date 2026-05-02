@@ -4,36 +4,37 @@
       <div class="col-12 col-md-10 col-lg-8">
         <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
           <div class="card-header bg-white border-bottom py-3">
-            <h4 class="card-title mb-1">Emotion Release</h4>
-            <p class="card-text text-muted mb-0 small">Write or record your feelings and let them go.</p>
+            <h4 class="card-title mb-1">Uvolnění emocí</h4>
+            <p class="card-text text-muted mb-0 small">Napište nebo nahrajte své pocity a nechte je odejít.</p>
           </div>
-          <div class="card-body py-4 px-3 px-md-4 min-vh-50 d-flex flex-column justify-content-center align-items-center">
-
+          <div
+            class="card-body py-4 px-3 px-md-4 min-vh-50 d-flex flex-column justify-content-center align-items-center"
+          >
             <!-- Step 1: Input worry -->
             <div v-if="step === 'input'" class="step-input w-100">
               <div class="mb-4">
-                <label for="worryInput" class="form-label fw-medium fs-5">What's troubling you right now?</label>
+                <label for="worryInput" class="form-label fw-medium fs-5">Co vás právě teď trápí?</label>
                 <div class="position-relative">
                   <textarea
                     id="worryInput"
                     v-model="worryText"
                     class="form-control rounded-4 shadow-sm"
                     rows="6"
-                    placeholder="You can write your feelings here..."
+                    placeholder="Zde můžete vypsat své pocity..."
                     maxlength="500"
-                    style="resize: none; padding-bottom: 60px;"
+                    style="resize: none; padding-bottom: 60px"
                   ></textarea>
 
                   <div class="position-absolute bottom-0 end-0 p-3 d-flex align-items-center gap-2">
-                    <span v-if="speechRecording" class="small text-danger fw-bold pulse-text">RECORDING...</span>
+                    <span v-if="speechRecording" class="small text-danger fw-bold pulse-text">NAHRÁVÁNÍ...</span>
                     <button
                       @click="toggleVoiceRecording"
                       :disabled="isProcessing"
                       class="btn rounded-circle shadow-sm voice-action-btn d-flex align-items-center justify-content-center"
                       :class="speechRecording ? 'btn-danger pulse' : 'btn-light border'"
                       type="button"
-                      style="width: 48px; height: 48px;"
-                      :title="speechRecording ? 'Stop recording' : 'Record voice'"
+                      style="width: 48px; height: 48px"
+                      :title="speechRecording ? 'Zastavit nahrávání' : 'Nahrát hlas'"
                     >
                       <i v-if="speechRecording" class="bi bi-stop-fill fs-4"></i>
                       <i v-else class="bi bi-mic-fill fs-4"></i>
@@ -42,9 +43,9 @@
                 </div>
 
                 <div class="form-text mt-2 small d-flex justify-content-between text-muted">
-                  <span>{{ worryText.length }}/500 characters</span>
+                  <span>{{ worryText.length }}/500 znaků</span>
                   <span v-if="speechTranscript" class="text-success fw-medium">
-                    <i class="bi bi-check2-all me-1"></i> Voice recognized
+                    <i class="bi bi-check2-all me-1"></i> Hlas rozpoznán
                   </span>
                 </div>
               </div>
@@ -55,7 +56,7 @@
                   :disabled="!worryText.trim() || isProcessing"
                   class="btn btn-dark py-3 rounded-pill fw-bold fs-5 shadow-sm"
                 >
-                  <i class="bi bi-emoji-laughing me-2"></i> Release Emotions
+                  <i class="bi bi-emoji-laughing me-2"></i> Uvolnit emoce
                 </button>
               </div>
             </div>
@@ -69,42 +70,45 @@
                     <p class="paper-text text-truncate">{{ worryText }}</p>
                   </div>
                   <div class="shreds-container" :class="{ 'shredding-active': isShredding }">
-                    <div v-for="i in 10" :key="i" class="shred" :style="{ left: `${(i-1)*10}%` }"></div>
+                    <div v-for="i in 10" :key="i" class="shred" :style="{ left: `${(i - 1) * 10}%` }"></div>
                   </div>
                 </div>
                 <div class="shredder-bottom">
                   <div class="shredder-slot"></div>
                 </div>
               </div>
-              <h5 class="mt-5 text-secondary fw-bold fade-in-out">Releasing...</h5>
+              <h5 class="mt-5 text-secondary fw-bold fade-in-out">Uvolňování...</h5>
             </div>
 
             <!-- Step 3: Response -->
             <div v-else-if="step === 'ai-response'" class="step-ai-response text-center py-4 w-100 fade-in">
               <div class="mb-4">
                 <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
-                  <i class="bi bi-stars me-1"></i> A thought for you
+                  <i class="bi bi-stars me-1"></i> Myšlenka pro vás
                 </span>
               </div>
-              <div class="ai-response-card mx-auto p-4 bg-light rounded-4 shadow-sm mb-4" style="max-width: 500px;">
+              <div
+                class="ai-response-card mx-auto p-4 bg-light rounded-4 shadow-sm mb-4"
+                style="max-width: 500px"
+              >
                 <p v-if="worryLoading" class="text-muted mb-0">
                   <span class="spinner-border spinner-border-sm me-2"></span>
-                  Finding the right words...
+                  Hledám ta správná slova...
                 </p>
                 <p v-else class="fs-5 text-dark mb-0 lh-base fw-medium">
                   {{ aiResponse }}
                 </p>
               </div>
-              <p class="text-muted small mb-4">AI-generated inspiration.</p>
+              <p class="text-muted small mb-4">Inspirace generovaná AI.</p>
               <button @click="startBreathing" class="btn btn-outline-primary rounded-pill px-4">
-                <i class="bi bi-lungs me-2"></i> Continue to breathing
+                <i class="bi bi-lungs me-2"></i> Pokračovat k dýchání
               </button>
             </div>
 
             <!-- Step 4: Box Breathing -->
             <div v-else-if="step === 'breathing'" class="step-breathing text-center py-4 w-100">
-              <h4 class="mb-4 fw-bold text-dark">Box Breathing</h4>
-              <p class="text-muted mb-5">A technique to calm the mind and reduce stress.</p>
+              <h4 class="mb-4 fw-bold text-dark">Krabicové dýchání</h4>
+              <p class="text-muted mb-5">Technika pro zklidnění mysli a snížení stresu.</p>
 
               <div class="breathing-container position-relative mx-auto mb-5">
                 <div class="breathing-box">
@@ -117,27 +121,29 @@
               </div>
 
               <div class="d-flex justify-content-between align-items-center mt-4 px-4 text-muted small fw-medium">
-                <span>Cycle: {{ breathingCycles + 1 }}/{{ totalCycles }}</span>
+                <span>Cyklus: {{ breathingCycles + 1 }}/{{ totalCycles }}</span>
                 <button @click="finishBreathing" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                  Skip
+                  Přeskočit
                 </button>
               </div>
             </div>
 
             <!-- Step 5: Complete -->
             <div v-else-if="step === 'complete'" class="step-complete text-center py-5 w-100 fade-in">
-              <div class="success-icon mx-auto mb-4 bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                <i class="bi bi-check2-circle" style="font-size: 3.5rem;"></i>
+              <div
+                class="success-icon mx-auto mb-4 bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 100px; height: 100px"
+              >
+                <i class="bi bi-check2-circle" style="font-size: 3.5rem"></i>
               </div>
-              <h3 class="fw-bold mb-3 text-dark">It's gone</h3>
+              <h3 class="fw-bold mb-3 text-dark">Je to pryč</h3>
               <p class="text-muted fs-5 mb-5 px-md-4">
-                The worry has been symbolically destroyed. Hope you feel a bit better.
+                Starost byla symbolicky zničena. Doufáme, že se cítíte o něco lépe.
               </p>
               <button @click="reset" class="btn btn-dark btn-lg rounded-pill px-5 shadow-sm w-100 w-sm-auto">
-                <i class="bi bi-arrow-clockwise me-2"></i> Again
+                <i class="bi bi-arrow-clockwise me-2"></i> Znovu
               </button>
             </div>
-
           </div>
         </div>
       </div>
@@ -155,7 +161,7 @@ const {
   loadModel,
   generateResponse,
   generateDailyQuote,
-  getRandomQuote
+  getRandomQuote,
 } = useWorryAI()
 
 const step = ref<'input' | 'shredding' | 'ai-response' | 'breathing' | 'complete'>('input')
@@ -176,11 +182,16 @@ let breathingInterval: ReturnType<typeof setInterval> | null = null
 
 const breathingPhaseText = computed(() => {
   switch (breathingPhase.value) {
-    case 'inhale': return 'Inhale'
-    case 'hold-in': return 'Hold'
-    case 'exhale': return 'Exhale'
-    case 'hold-out': return 'Hold'
-    default: return ''
+    case 'inhale':
+      return 'Nádech'
+    case 'hold-in':
+      return 'Zadržet'
+    case 'exhale':
+      return 'Výdech'
+    case 'hold-out':
+      return 'Zadržet'
+    default:
+      return ''
   }
 })
 
@@ -204,7 +215,7 @@ async function toggleVoiceRecording() {
   // Mock voice recording toggle - replace with real speech-to-text later
   speechRecording.value = !speechRecording.value
   if (!speechRecording.value && !speechTranscript.value) {
-    speechTranscript.value = 'This is a mock voice transcript.'
+    speechTranscript.value = 'Toto je ukázkový přepis hlasu.'
     worryText.value = speechTranscript.value
   }
 }
