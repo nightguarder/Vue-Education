@@ -15,6 +15,9 @@ export default defineConfig({
       resolvers: [BootstrapVueNextResolver()],
     }),
   ],
+  optimizeDeps: {
+    include: ['@huggingface/transformers'],
+  },
   css: {
     preprocessorOptions: {
       scss: {
@@ -32,10 +35,15 @@ export default defineConfig({
       '/omlx': {
         target: 'http://127.0.0.1:8888',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/omlx/, '/v1')
+        rewrite: (path) => path.replace(/^\/omlx/, '/v1'),
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('[OMLX Proxy Error]', err.message)
+          })
+        }
       },
       '/api': {
-        target: 'http://127.0.0.1:8080', // Local PHP server
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
