@@ -33,7 +33,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/omlx': {
-        target: 'http://127.0.0.1:8888',
+        target: `http://127.0.0.1:${process.env.VITE_OMLX_PORT || '8080'}`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/omlx/, '/v1'),
         configure: (proxy, options) => {

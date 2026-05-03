@@ -6,18 +6,19 @@ const isReady = ref(false)
 const isRecording = ref(false)
 const isProcessing = ref(false)
 const error = ref<string | null>(null)
+const currentLang = ref('cs-CZ') // Default Czech
 
 let recognition: any = null
 let finalTranscript = ''
 
-function createRecognition() {
+function createRecognition(lang: string) {
   const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
   if (!SpeechRecognition) return null
   
   const rec = new SpeechRecognition()
   rec.continuous = true
   rec.interimResults = true
-  rec.lang = 'cs-CZ'
+  rec.lang = lang
   rec.maxAlternatives = 1
   
   return rec
@@ -27,8 +28,8 @@ export function useSpeechToText() {
   const state = reactive({
     transcript: ''
   })
-
-  async function loadModel(): Promise<boolean> {
+  
+  async function loadModel(lang?: string): Promise<boolean> {
     if (recognition) {
       isReady.value = true
       return true
@@ -46,14 +47,15 @@ export function useSpeechToText() {
         throw new Error('Speech recognition not supported in this browser')
       }
       
-      recognition = createRecognition()
+      const langToUse = lang || currentLang.value
+      recognition = createRecognition(langToUse)
       
       if (!recognition) {
         throw new Error('Failed to create recognition object')
       }
 
       let interim = ''
-
+      
       recognition.onresult = (event: any) => {
         interim = ''
         
@@ -94,7 +96,7 @@ export function useSpeechToText() {
         // Don't nullify recognition so we can reuse it
       }
       
-      console.log('[SpeechToText] Web Speech API initialized (Czech)')
+      console.log('[SpeechToText] Web Speech API initialized:', langToUse)
       isReady.value = true
       return true
     } catch (e: any) {
@@ -107,11 +109,11 @@ export function useSpeechToText() {
     }
   }
 
-  async function startRecording(): Promise<boolean> {
+  async function startRecording(lang?: string): Promise<boolean> {
     if (isRecording.value) return true
     
     if (!recognition) {
-      const loaded = await loadModel()
+      const loaded = await loadModel(lang || currentLang.value)
       if (!loaded) return false
     }
 
@@ -122,6 +124,10 @@ export function useSpeechToText() {
     try {
       finalTranscript = ''
       state.transcript = ''
+      if (lang) {
+        recognition.lang = lang
+        currentLang.value = lang
+      }
       recognition.start()
       isRecording.value = true
       console.log('[SpeechToText] Recording started')
@@ -172,6 +178,13 @@ export function useSpeechToText() {
     state.transcript = ''
   }
 
+  function setLanguage(lang: string) {
+    currentLang.value = lang
+    if (recognition) {
+      recognition.lang = lang
+    }
+  }
+
   return {
     isLoading,
     isReady,
@@ -183,6 +196,7 @@ export function useSpeechToText() {
     startRecording,
     stopRecording,
     getTranscript,
-    resetTranscript
+    resetTranscript,
+    setLanguage
   }
 }
