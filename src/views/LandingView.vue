@@ -25,7 +25,7 @@
           <BCol md="6" lg="5">
             <BCard
               class="portal-card h-100 p-2 bg-white border-0 shadow-sm"
-              @click="$router.push('/doctors/education')"
+              @click="$router.push('/doctor/education')"
             >
               <div class="d-flex align-items-start mb-3">
                 <div class="portal-icon-wrapper me-3">

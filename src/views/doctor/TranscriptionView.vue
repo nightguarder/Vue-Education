@@ -13,22 +13,8 @@
             
             <!-- Model Status -->
             <div class="mt-2 d-flex align-items-center gap-3 flex-wrap">
-              <button 
-                v-if="!modelReady"
-                class="btn btn-sm btn-warning"
-                @click="loadTranscriptionModel"
-                :disabled="isLoading"
-              >
-                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                <i v-else class="bi bi-download me-2"></i>
-                {{ isLoading ? `Loading model... ${Math.round(downloadProgress)}%` : 'Load Transcription Model' }}
-              </button>
-              <span v-else class="badge bg-success me-2">
-                <i class="bi bi-check-circle me-1"></i> {{ isWebGPU ? 'WebGPU' : 'OMLX' }} ready
-              </span>
-              
               <!-- Toggle Switch -->
-              <div v-if="modelReady" class="form-check form-switch d-flex align-items-center gap-2">
+              <div class="form-check form-switch d-flex align-items-center gap-2">
                 <input 
                   class="form-check-input" 
                   type="checkbox" 
@@ -41,7 +27,20 @@
                   {{ useLocalModel ? 'WebGPU (Local)' : 'OMLX (Server)' }}
                 </label>
               </div>
-              
+
+              <button 
+                v-if="!modelReady && useLocalModel"
+                class="btn btn-sm btn-warning"
+                @click="loadTranscriptionModel"
+                :disabled="isLoading"
+              >
+                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                <i v-else class="bi bi-download me-2"></i>
+                {{ isLoading ? `Loading model... ${Math.round(downloadProgress)}%` : 'Load WebGPU Model' }}
+              </button>
+              <span v-else-if="modelReady" class="badge bg-success me-2">
+                <i class="bi bi-check-circle me-1"></i> {{ isWebGPU ? 'WebGPU' : 'OMLX' }} ready
+              </span>
               <span v-if="error" class="badge bg-danger">{{ error }}</span>
             </div>
           </div>
@@ -151,6 +150,28 @@
               </div>
             </div>
             
+            <!-- Dev Text Paste (Development Only) -->
+            <div class="dev-paste-card mt-3 p-3 border border-warning rounded bg-warning bg-opacity-10">
+              <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-warning text-dark me-2">DEV</span>
+                <small class="text-muted">Paste transcribed text directly (for development)</small>
+              </div>
+              <textarea 
+                v-model="pastedText" 
+                class="form-control form-control-sm mb-2" 
+                rows="4" 
+                placeholder="Paste transcribed text here..."
+              ></textarea>
+              <button 
+                class="btn btn-warning btn-sm"
+                @click="createChatFromPasted"
+                :disabled="!pastedText.trim() || !patientName"
+              >
+                <i class="bi bi-chat-dots me-1"></i>
+                Create Chat from Pasted Text
+              </button>
+            </div>
+             
             <!-- Progress -->
             <div v-if="isTranscribing" class="text-center py-3">
               <div class="spinner-border text-primary mb-2"></div>
@@ -182,7 +203,9 @@
                 </div>
               </div>
               
-              <!-- Chat Created Notification -->
+              </div>
+              
+              <!-- Chat Created Notification (shows for both transcription and pasted text) -->
               <div v-if="createdChat" class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded">
                 <div class="d-flex align-items-center justify-content-between">
                   <div>
@@ -204,7 +227,6 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 
@@ -237,6 +259,9 @@ const patientAge = ref<number | undefined>(undefined)
 const patientGender = ref('')
 const patientNotes = ref('')
 
+// Dev: Pasted text
+const pastedText = ref('')
+
 // Audio state
 const isDragging = ref(false)
 const audioFile = ref<File | null>(null)
@@ -264,9 +289,7 @@ onMounted(() => {
 })
 
 async function loadTranscriptionModel() {
-  isLoading.value = true
   await loadModel()
-  isLoading.value = false
 }
 
 function handleFileSelect(event: Event) {
@@ -329,6 +352,40 @@ function clearFile() {
 
 function generateChatId(): string {
   return 'CHAT-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase()
+}
+
+async function createChatFromPasted() {
+  if (!pastedText.value.trim() || !patientName.value) return
+  
+  const chatId = generateChatId()
+  const chatData = {
+    chatId,
+    patientName: patientName.value,
+    patientAge: patientAge.value,
+    patientGender: patientGender.value,
+    patientNotes: patientNotes.value,
+    createdAt: new Date().toISOString(),
+    lastActivity: new Date().toISOString(),
+    transcript: pastedText.value,
+    messages: [
+      {
+        role: 'system',
+        content: `Patient: ${patientName.value}${patientAge.value ? `, Age: ${patientAge.value}` : ''}${patientGender.value ? `, Gender: ${patientGender.value}` : ''}${patientNotes.value ? `\nNotes: ${patientNotes.value}` : ''}`
+      },
+      {
+        role: 'user',
+        content: `[Audio Transcript]\n\n${pastedText.value}`,
+        timestamp: new Date().toISOString()
+      }
+    ]
+  }
+  
+  saveChatToLocalStorage(chatData)
+  
+  createdChat.value = {
+    chatId,
+    patientName: patientName.value
+  }
 }
 
 function saveChatToLocalStorage(chatData: any) {

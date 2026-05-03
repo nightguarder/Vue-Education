@@ -7,8 +7,8 @@ const MODEL_BASE = `https://huggingface.co/${MODEL_ID}/resolve/main`
 const MAX_AUDIO_DURATION_SECONDS = 24 * 60
 
 // OMLX Configuration
-const OMLX_PORT = import.meta.env.VITE_OMLX_PORT || '8888'
-const OMLX_API_KEY = import.meta.env.VITE_OMLX_API_KEY || '5004'
+const OMLX_PORT = import.meta.env.VITE_OMLX_PORT || '8080'
+const OMLX_API_KEY = import.meta.env.VITE_OMLX_API_KEY || '1234'
 const PARAKEEET_MODEL = import.meta.env.VITE_PARAKEEET_MODEL || 'parakeet-tdt-0.6b-v3'
 
 const isLoading = ref(false)
@@ -31,7 +31,7 @@ export function useTranscription() {
     error.value = null
 
     try {
-      console.log('[Transcription] Initializing ONNX transcription engine...')
+      if (import.meta.env.DEV) console.log("[Transcription] Initializing ONNX transcription engine...")
       
       // Check WebGPU availability
       isWebGPU.value = !!(navigator as any)?.gpu
@@ -43,7 +43,7 @@ export function useTranscription() {
       // 1. Load vocab.txt tokenizer (browser-compatible)
       loaded++
       downloadProgress.value = (loaded / totalFiles) * 100
-      console.log('[Transcription] Loading vocab...')
+      if (import.meta.env.DEV) console.log("[Transcription] Loading vocab...")
       
       const vocabFilename = '0ee587b5d4b94f48993dcccf9868ea77_tokenizer.vocab'
       const vocabUrl = `${MODEL_BASE}/tokenizer/${vocabFilename}`
@@ -60,10 +60,13 @@ export function useTranscription() {
         const parts = line.split('\t')
         let token = parts[0] || ''
         
-        // Handle SentencePiece spaces
-        if (token.startsWith(' ')) {
-          token = ' ' + token.substring(1)
-        } else if (token.startsWith('<')) {
+        // Handle SentencePiece space marker (▁ U+2581)
+        if (token === '▁' || token.startsWith('▁')) {
+          token = token.replace(/▁/g, ' ')
+        }
+        
+        // Handle special tokens
+        if (token.startsWith('<')) {
           token = '' // ignore special tokens in output
         }
         
@@ -511,7 +514,7 @@ export function useTranscription() {
       }
     }
     
-    const text = transcript.map(id => vocab.get(id) || '').join('').replace(/ /g, ' ').trim()
+    const text = transcript.map(id => vocab.get(id) || '').join('').replace(/▁/g, ' ').trim()
     console.log('[Transcription] Raw IDs:', transcript)
     console.log('[Transcription] Mapped text:', text)
     console.log('[Transcription] Decoding complete.')

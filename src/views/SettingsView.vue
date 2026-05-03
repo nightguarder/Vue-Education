@@ -22,7 +22,7 @@
                   id="omlx-port"
                   v-model="config.port"
                   type="number"
-                  placeholder="8888"
+                  placeholder="8080"
                 />
                 <BFormText>Port where OMLX service is running locally.</BFormText>
               </BFormGroup>
@@ -195,7 +195,7 @@
                     <h5>Konfigurace Localhost a API klíče</h5>
                     <p class="text-muted">
                       V aplikaci OMLX uvidíte nastavení portu (výchozí <strong>8080</strong>) 
-                      a API klíč (výchozí <strong>5004</strong>). Tyto údaje zkopírujte do formuláře výše.
+                      a API klíč (výchozí <strong>1234</strong>). Tyto údaje zkopírujte do formuláře výše.
                     </p>
                     <div class="step-image mt-3 bg-white border rounded d-flex align-items-center justify-content-center p-4 shadow-sm">
                       <i class="bi bi-key fs-1 text-warning"></i>
@@ -244,7 +244,7 @@ const availableModels = ref<{ value: string; text: string }[]>([
 const loadingModels = ref(false)
 
 const config = reactive({
-  port: import.meta.env.VITE_OMLX_PORT || '8888',
+  port: import.meta.env.VITE_OMLX_PORT || '8080',
   apiKey: import.meta.env.VITE_OMLX_API_KEY || '',
   model: 'gemma-4-e4b-it-OptiQ-4bit',
   transModel: 'gemma-4-e4b-it-OptiQ-4bit'
