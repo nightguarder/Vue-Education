@@ -35,7 +35,7 @@ const currentYear = computed(() => new Date().getFullYear())
               </RouterLink>
             </BNavItem>
             <BNavItem>
-              <RouterLink to="/doctors/education" class="footer-link" aria-label="Doctor Portal">
+              <RouterLink to="/doctor/education" class="footer-link" aria-label="Doctor Portal">
                 Doctor Portal
               </RouterLink>
             </BNavItem>

@@ -118,8 +118,7 @@
               <p class="text-muted">Synthesizing report using AI...</p>
             </div>
             <!-- Show translated report if available, otherwise show original -->
-            <div v-if="translatedReport" class="report-content" v-html="translatedReport"></div>
-            <div v-else-if="reportContent" class="report-content" v-html="formattedReport"></div>
+            <div v-if="sanitizedReport" class="report-content" v-html="sanitizedReport"></div>
           </div>
           <!-- Chat Input -->
           <div class="card-footer bg-white border-top-0">
@@ -179,7 +178,23 @@ const chatHistory = ref<{ role: string; content: string }[]>([])
 
 const isExporting = ref(false)
 
+// Simple HTML sanitizer to prevent XSS
+function sanitizeHtml(html: string): string {
+  if (!html) return ''
+  return html
+    .replace(/<script[^>]*>.*?<\/script>/gis, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/on\w+='[^']*'/gi, '')
+    .replace(/javascript:/gi, '')
+}
+
 const tavilyConfigured = computed(() => isTavilyConfigured())
+
+// Sanitized report for v-html (prevents XSS)
+const sanitizedReport = computed(() => {
+  const content = translatedReport.value || formattedReport.value
+  return sanitizeHtml(content)
+})
 
 const truncate = (text: string, maxLength: number) => {
   if (!text) return ''

@@ -16,7 +16,7 @@
           <BDropdownItem :to="'/patients/worksheets'">
             <i class="bi bi-journal-text me-2"></i>Worksheets
           </BDropdownItem>
-          <BDropdownItem :to="'/patients/resources'">
+          <BDropdownItem :to="'/patients/infographics'">
             <i class="bi bi-images me-2"></i>Infographics
           </BDropdownItem>
           <BDropdownItem :to="'/patients/audio'">
