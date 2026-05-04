@@ -1,50 +1,50 @@
 <template>
   <BNavbar toggleable="lg" type="light" class="site-header" container="lg">
     <BNavbarBrand>
-      <RouterLink to="/" class="navbar-brand">Education Platform</RouterLink>
+      <RouterLink to="/" class="navbar-brand">Vzdělávací platforma</RouterLink>
     </BNavbarBrand>
 
     <BNavbarToggle target="navbarNav" />
 
     <BCollapse id="navbarNav" is-nav class="justify-content-end">
       <BNavbarNav>
-        <RouterLink class="nav-link px-3" to="/">Home</RouterLink>
-        <BNavItemDropdown text="Patient Portal">
+        <RouterLink class="nav-link px-3" to="/">Domů</RouterLink>
+        <BNavItemDropdown text="Portál pro pacienty">
           <BDropdownItem :to="'/patients/home'">
-            <i class="bi bi-house me-2"></i>Dashboard
+            <i class="bi bi-house me-2"></i>Přehled
           </BDropdownItem>
           <BDropdownItem :to="'/patients/worksheets'">
-            <i class="bi bi-journal-text me-2"></i>Worksheets
+            <i class="bi bi-journal-text me-2"></i>Pracovní listy
           </BDropdownItem>
           <BDropdownItem :to="'/patients/infographics'">
-            <i class="bi bi-images me-2"></i>Infographics
+            <i class="bi bi-images me-2"></i>Infografiky
           </BDropdownItem>
           <BDropdownItem :to="'/patients/audio'">
-            <i class="bi bi-headphones me-2"></i>Audio Library
+            <i class="bi bi-headphones me-2"></i>Audio knihovna
           </BDropdownItem>
-          <BDropdownItem :to="'/patients/stress'">
-            <i class="bi bi-heart me-2"></i>Stress Relief
+          <BDropdownItem :to="'/patients/stress-relief'">
+            <i class="bi bi-heart me-2"></i>Zvládání stresu
           </BDropdownItem>
         </BNavItemDropdown>
-        <BNavItemDropdown text="Doctor Portal">
+        <BNavItemDropdown text="Portál pro lékaře">
           <BDropdownItem :to="'/doctor/home'">
-            <i class="bi bi-house me-2"></i>Home
+            <i class="bi bi-house me-2"></i>Domů
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/chat'">
-            <i class="bi bi-chat-dots me-2"></i>Chats
+            <i class="bi bi-chat-dots me-2"></i>Chaty
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/education'">
-            <i class="bi bi-search me-2"></i>Literature Search
+            <i class="bi bi-search me-2"></i>Vyhledávání literatury
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/research'">
-            <i class="bi bi-journal-bookmark me-2"></i>Research Notebook
+            <i class="bi bi-journal-bookmark me-2"></i>Výzkumný sešit
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/transcription'">
-            <i class="bi bi-mic me-2"></i>Audio Transcription
+            <i class="bi bi-mic me-2"></i>Přepis audia
           </BDropdownItem>
           <BDropdownDivider />
           <BDropdownItem :to="'/settings'">
-            <i class="bi bi-gear me-2"></i>Settings
+            <i class="bi bi-gear me-2"></i>Nastavení
           </BDropdownItem>
         </BNavItemDropdown>
       </BNavbarNav>

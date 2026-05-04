@@ -25,23 +25,28 @@ const currentYear = computed(() => new Date().getFullYear())
     <BCol class="text-end">
           <BNav vertical class="footer-nav">
             <BNavItem>
-              <RouterLink to="/" class="footer-link" aria-label="Home">
-                Home
+              <RouterLink to="/" class="footer-link" aria-label="Domů">
+                Domů
               </RouterLink>
             </BNavItem>
             <BNavItem>
-              <RouterLink to="/patients/home" class="footer-link" aria-label="Patient Portal">
-                Patient Portal
+              <RouterLink to="/patients/home" class="footer-link" aria-label="Portál pro pacienty">
+                Portál pro pacienty
               </RouterLink>
             </BNavItem>
             <BNavItem>
-              <RouterLink to="/doctor/education" class="footer-link" aria-label="Doctor Portal">
-                Doctor Portal
+              <RouterLink to="/doctor/education" class="footer-link" aria-label="Portál pro lékaře">
+                Portál pro lékaře
               </RouterLink>
             </BNavItem>
             <BNavItem>
-              <RouterLink to="/settings" class="footer-link" aria-label="Settings">
-                Settings
+              <RouterLink to="/settings" class="footer-link" aria-label="Nastavení">
+                Nastavení
+              </RouterLink>
+            </BNavItem>
+            <BNavItem>
+              <RouterLink to="/contact" class="footer-link" aria-label="Kontakt">
+                Kontakt
               </RouterLink>
             </BNavItem>
           </BNav>

@@ -24,7 +24,7 @@ const router = createRouter({
       component: () => import('../views/patient/PatientWorksheets.vue'),
     },
     {
-      path: '/patients/stress',
+      path: '/patients/stress-relief',
       name: 'stress-relief',
       component: () => import('../views/patient/PatientStressRelief.vue'),
     },
@@ -88,6 +88,12 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: () => import('../views/SettingsView.vue'),
+    },
+    // Contact route
+    {
+      path: '/contact',
+      name: 'contact',
+      component: () => import('../views/ContactView.vue'),
     },
   ],
 })

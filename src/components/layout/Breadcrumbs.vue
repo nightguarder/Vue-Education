@@ -67,20 +67,22 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
 function formatName(pathPart: string): string {
   // Map specific paths to better names
   const mapping: Record<string, string> = {
-    'patients': 'Patient Portal',
-    'doctor': 'Doctor Portal',
-    'home': 'Home',
-    'worksheets': 'Worksheets',
-    'stress': 'Stress Relief',
-    'resources': 'Resources',
-    'audio': 'Audio Library',
-    'infographics': 'Infographics',
-    'feedback': 'Feedback',
-    'education': 'Education',
-    'research': 'Research',
-    'transcription': 'Transcription',
-    'chat': 'Clinical Sessions',
-    'settings': 'Settings'
+    'patients': 'Portál pro pacienty',
+    'doctor': 'Portál pro lékaře',
+    'home': 'Domů',
+    'worksheets': 'Pracovní listy',
+    'stress': 'Zvládání stresu',
+    'stress-relief': 'Zvládání stresu',
+    'resources': 'Zdroje',
+    'audio': 'Audio knihovna',
+    'infographics': 'Infografiky',
+    'feedback': 'Zpětná vazba',
+    'education': 'Vzdělávání',
+    'research': 'Výzkum',
+    'transcription': 'Přepis',
+    'chat': 'Klinická sezení',
+    'settings': 'Nastavení',
+    'contact': 'Kontakt'
   }
 
   return mapping[pathPart.toLowerCase()] || 
