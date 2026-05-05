@@ -3,12 +3,15 @@
     <!-- Breadcrumb / Back Navigation -->
     <div class="row mb-3">
       <div class="col-12">
-        <router-link to="/patients/home" class="text-decoration-none text-muted d-flex align-items-center">
+        <router-link
+          to="/patients/home"
+          class="text-decoration-none text-muted d-flex align-items-center"
+        >
           <i class="bi bi-arrow-left me-2"></i> Zpět na přehled
         </router-link>
       </div>
     </div>
-    
+
     <div class="row justify-content-center">
       <div class="col-12 col-md-10 col-lg-8">
         <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
@@ -62,6 +65,10 @@
                   <span v-if="speechState.transcript" class="text-success fw-medium">
                     <i class="bi bi-check2-all me-1"></i> Hlas rozpoznán
                   </span>
+                </div>
+                <div class="form-text mt-1 small text-muted">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Pouze angličtina je prozatím podporována.
                 </div>
               </div>
 
@@ -197,6 +204,7 @@ const {
   isReady,
   generateResponse,
   getRandomQuote,
+  loadModel: loadAiModel,
 } = useStressReliefAI()
 
 const {
@@ -250,7 +258,10 @@ onMounted(() => {
   const textarea = document.getElementById('stressInput')
   if (textarea) textarea.focus()
 
-  // Automatic AI model loading removed
+  // Load AI model for stress relief
+  loadAiModel().catch((err) => {
+    console.warn('[StressRelief] AI model load warning:', err)
+  })
 
   // Load speech model
   loadSpeechModel().catch((err) => {
@@ -273,6 +284,7 @@ async function toggleVoiceRecording() {
   } else {
     resetTranscript()
     stressText.value = ''
+    // Language is already set via setLanguage() or defaults to cs-CZ
     await startRecording()
   }
 }
@@ -291,10 +303,12 @@ function saveDailyQuote(quote: string, isAi = true) {
 async function generateAndSaveDailyQuote() {
   const todayKey = getTodayKey()
   if (localStorage.getItem(todayKey)) return
-  
+
   if (isReady.value) {
     try {
-      const quote = await generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.')
+      const quote = await generateResponse(
+        'Generate a short inspirational quote to start the day. Max 2 sentences.',
+      )
       saveDailyQuote(quote, true)
     } catch (e) {
       console.warn('[StressRelief] Daily quote generation failed:', e)

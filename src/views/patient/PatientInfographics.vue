@@ -15,22 +15,22 @@ const infographics = ref<Infographic[]>([
     title: 'Péče o duševní zdraví',
     description: 'Základní principy pro udržení duševní pohody v každodenním životě.',
     imageUrl: 'https://placehold.co/600x848?text=Infografika+1',
-    category: 'Prevence'
+    category: 'Prevence',
   },
   {
     id: 2,
     title: 'Techniky zvládání úzkosti',
     description: 'Praktické cviky a dechová cvičení pro okamžitou pomoc při úzkosti.',
     imageUrl: 'https://placehold.co/600x848?text=Infografika+2',
-    category: 'Cvičení'
+    category: 'Cvičení',
   },
   {
     id: 3,
     title: 'Spánková hygiena',
     description: 'Jak zlepšit kvalitu spánku a podpořit regeneraci organismu.',
     imageUrl: 'https://placehold.co/600x848?text=Infografika+3',
-    category: 'Životní styl'
-  }
+    category: 'Životní styl',
+  },
 ])
 
 const activeInfographic = ref<Infographic | null>(null)
@@ -55,7 +55,7 @@ const openModal = (info: Infographic) => {
       <div v-for="info in infographics" :key="info.id" class="col-md-6 col-lg-4">
         <div class="infographic-card h-100 shadow-sm border-0" @click="openModal(info)">
           <div class="position-relative overflow-hidden card-img-container">
-            <img :src="info.imageUrl" :alt="info.title" class="card-img-top">
+            <img :src="info.imageUrl" :alt="info.title" class="card-img-top" />
             <div class="overlay">
               <i class="bi bi-zoom-in fs-1 text-white"></i>
             </div>
@@ -79,7 +79,11 @@ const openModal = (info: Infographic) => {
 
     <!-- Modal for Preview (using standard Bootstrap Modal classes) -->
     <div v-if="activeInfographic" class="modal-backdrop fade show"></div>
-    <div v-if="activeInfographic" class="modal fade show d-block" @click.self="activeInfographic = null">
+    <div
+      v-if="activeInfographic"
+      class="modal fade show d-block"
+      @click.self="activeInfographic = null"
+    >
       <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
           <div class="modal-header border-0 pb-0">
@@ -87,7 +91,11 @@ const openModal = (info: Infographic) => {
             <button type="button" class="btn-close" @click="activeInfographic = null"></button>
           </div>
           <div class="modal-body text-center p-4">
-            <img :src="activeInfographic.imageUrl" :alt="activeInfographic.title" class="img-fluid rounded shadow-sm a4-preview">
+            <img
+              :src="activeInfographic.imageUrl"
+              :alt="activeInfographic.title"
+              class="img-fluid rounded shadow-sm a4-preview"
+            />
             <p class="mt-4 text-muted">{{ activeInfographic.description }}</p>
           </div>
           <div class="modal-footer border-0 pt-0">
@@ -108,19 +116,21 @@ const openModal = (info: Infographic) => {
 
 .infographic-card {
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   border-radius: 20px;
   overflow: hidden;
   background: white;
 
   &:hover {
     transform: translateY(-8px);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
 
     .overlay {
       opacity: 1;
     }
-    
+
     .card-img-top {
       transform: scale(1.05);
     }
@@ -148,7 +158,7 @@ const openModal = (info: Infographic) => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -166,16 +176,16 @@ const openModal = (info: Infographic) => {
   font-size: 0.75rem;
   font-weight: 700;
   color: $primary-color;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .a4-preview {
   max-height: 70vh;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .modal-backdrop {
-  background-color: rgba(0,0,0,0.6);
+  background-color: rgba(0, 0, 0, 0.6);
 }
 
 .modal-content {

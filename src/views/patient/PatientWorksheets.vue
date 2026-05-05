@@ -3,66 +3,62 @@
     <!-- Breadcrumb / Back Navigation -->
     <div class="row mb-3">
       <div class="col-12">
-        <router-link to="/patients/home" class="text-decoration-none text-muted d-flex align-items-center">
+        <router-link
+          to="/patients/home"
+          class="text-decoration-none text-muted d-flex align-items-center"
+        >
           <i class="bi bi-arrow-left me-2"></i> Zpět na přehled
         </router-link>
       </div>
     </div>
-    
+
     <div class="row justify-content-center">
       <div class="col-md-8">
         <div class="card shadow-sm border-0">
           <div class="card-header bg-white border-bottom">
-            <h4 class="card-title mb-1">Your Worksheets</h4>
+            <h4 class="card-title mb-1">Vaše pracovní listy</h4>
             <p class="card-text text-muted mb-0 small">
-              Print your home exercises and worksheets assigned by your therapist.
+              Vytiskněte si svá domácí cvičení a pracovní listy přidělené vaším terapeutem.
             </p>
           </div>
           <div class="card-body">
             <!-- Patient ID Input -->
             <div class="mb-4">
               <div class="mb-2">
-                <label for="patient-id" class="form-label">Patient ID (optional)</label>
+                <label for="patient-id" class="form-label">ID pacienta (nepovinné)</label>
                 <div class="d-flex gap-2">
                   <input
                     id="patient-id"
                     v-model="patientId"
                     class="form-control"
-                    placeholder="Enter your patient ID, or leave empty for guest mode"
+                    placeholder="Zadejte své ID pacienta nebo ponechte prázdné pro režim hosta"
                     :disabled="loading"
                   />
-                  <button
-                    class="btn btn-primary"
-                    @click="loadWorksheets"
-                    :disabled="loading"
-                  >
+                  <button class="btn btn-primary" @click="loadWorksheets" :disabled="loading">
                     <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-                    {{ loading ? 'Loading...' : 'Load' }}
+                    {{ loading ? 'Načítání...' : 'Načíst' }}
                   </button>
-                  <button
-                    v-if="patientId"
-                    class="btn btn-outline-secondary"
-                    @click="clearId"
-                  >
-                    Clear
+                  <button v-if="patientId" class="btn btn-outline-secondary" @click="clearId">
+                    Vymazat
                   </button>
                 </div>
               </div>
               <div v-if="isGuestMode" class="text-muted small">
                 <i class="bi bi-info-circle me-1"></i>
-                Guest mode: Showing generic worksheets. Enter your ID for personalized worksheets.
+                Režim hosta: Zobrazují se obecné pracovní listy. Zadejte své ID pro personalizované
+                pracovní listy.
               </div>
               <div v-else class="text-success small">
                 <i class="bi bi-check-circle me-1"></i>
-                Loaded worksheets for patient: {{ patientId }}
+                Načteny pracovní listy pro pacienta: {{ patientId }}
               </div>
             </div>
 
             <div v-if="loading" class="text-center py-5">
               <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+                <span class="visually-hidden">Načítání...</span>
               </div>
-              <p class="mt-3">Loading worksheets...</p>
+              <p class="mt-3">Načítání pracovních listů...</p>
             </div>
 
             <div v-else-if="error" class="alert alert-danger">
@@ -72,11 +68,13 @@
 
             <div v-else-if="worksheets.length === 0" class="text-center py-5">
               <i class="bi bi-journal-text display-4 text-muted mb-4"></i>
-              <h5>No worksheets found</h5>
+              <h5>Nenalezeny žádné pracovní listy</h5>
               <p class="text-muted">
-                {{ isGuestMode
-                  ? 'No generic worksheets available. Please check back later.'
-                  : 'Ask your therapist to assign worksheets through the doctor portal.' }}
+                {{
+                  isGuestMode
+                    ? 'Nejsou k dispozici žádné obecné pracovní listy. Zkontrolujte prosím později.'
+                    : 'Požádejte svého terapeuta o přidělení pracovních listů prostřednictvím lékařského portálu.'
+                }}
               </p>
             </div>
 
@@ -87,7 +85,11 @@
                     <div class="flex-grow-1">
                       <h5 class="card-title">{{ worksheet.title }}</h5>
                       <p class="card-text text-muted small">
-                        {{ worksheet.assignedAt ? new Date(worksheet.assignedAt).toLocaleDateString() : '' }}
+                        {{
+                          worksheet.assignedAt
+                            ? new Date(worksheet.assignedAt).toLocaleDateString()
+                            : ''
+                        }}
                       </p>
 
                       <div v-if="worksheet.instruction" class="alert alert-info mt-3 small">
@@ -103,7 +105,7 @@
                         class="btn btn-primary btn-sm"
                       >
                         <i class="bi bi-pencil-square me-1"></i>
-                        {{ worksheet.completed ? 'View Response' : 'Fill Online' }}
+                        {{ worksheet.completed ? 'Zobrazit odpověď' : 'Vyplnit online' }}
                       </button>
 
                       <button
@@ -111,7 +113,7 @@
                         @click="printWorksheet(worksheet)"
                         class="btn btn-outline-secondary btn-sm"
                       >
-                        <i class="bi bi-printer me-1"></i> Print
+                        <i class="bi bi-printer me-1"></i> Tisk
                       </button>
 
                       <button
@@ -119,7 +121,7 @@
                         @click="viewPdf(worksheet)"
                         class="btn btn-outline-primary btn-sm"
                       >
-                        <i class="bi bi-eye me-1"></i> View PDF
+                        <i class="bi bi-eye me-1"></i> Zobrazit PDF
                       </button>
 
                       <button
@@ -127,7 +129,7 @@
                         @click="printWorksheet(worksheet)"
                         class="btn btn-outline-success btn-sm"
                       >
-                        <i class="bi bi-printer me-1"></i> Print PDF
+                        <i class="bi bi-printer me-1"></i> Tisk PDF
                       </button>
                     </div>
                   </div>
@@ -143,7 +145,7 @@
     <div
       v-if="activeWorksheet"
       class="modal fade show"
-      style="display:block; background:rgba(0,0,0,0.5)"
+      style="display: block; background: rgba(0, 0, 0, 0.5)"
       @click.self="activeWorksheet = null"
     >
       <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -197,11 +199,15 @@
               </div>
 
               <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="button" class="btn btn-outline-secondary" @click="activeWorksheet = null">
-                  Cancel
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  @click="activeWorksheet = null"
+                >
+                  Zrušit
                 </button>
                 <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-check-lg me-1"></i> Submit
+                  <i class="bi bi-check-lg me-1"></i> Odeslat
                 </button>
               </div>
             </form>
@@ -231,28 +237,45 @@ const error = ref<string | null>(null)
 const genericWorksheets: Worksheet[] = [
   {
     id: 1,
-    title: 'CBT Thought Record',
+    title: 'KBT záznam myšlenek',
     type: 'cbt_record',
-    intro: 'Track your thoughts and feelings.',
+    intro: 'Sledujte své myšlenky a pocity.',
     fields: [
-      { id: 'q1', type: 'textarea', label: 'What happened? (Trigger)', placeholder: 'Describe the situation...' },
-      { id: 'q2', type: 'slider', min: 0, max: 10, label: 'Anxiety level (0-10)', value: 5 },
-      { id: 'q3', type: 'textarea', label: 'Automatic thought', placeholder: 'What went through your mind?' },
-      { id: 'q4', type: 'textarea', label: 'Alternative thought', placeholder: 'A more balanced thought...' }
+      {
+        id: 'q1',
+        type: 'textarea',
+        label: 'Co se stalo? (Spoušť)',
+        placeholder: 'Popište situaci...',
+      },
+      { id: 'q2', type: 'slider', min: 0, max: 10, label: 'Úroveň úzkosti (0-10)', value: 5 },
+      { id: 'q3', type: 'textarea', label: 'Automatická myšlenka', placeholder: 'Co vás napadlo?' },
+      {
+        id: 'q4',
+        type: 'textarea',
+        label: 'Alternativní myšlenka',
+        placeholder: 'Vyváženější myšlenka...',
+      },
     ],
-    assignedAt: '' // Will be set in onMounted
+    assignedAt: '', // Will be set in onMounted
   },
   {
     id: 2,
-    title: 'Mood Diary',
+    title: 'Deník nálad',
     type: 'mood_diary',
     fields: [
-      { id: 'mood', type: 'slider', min: 1, max: 10, label: 'Overall mood (1=worst, 10=best)', value: 5 },
-      { id: 'sleep', type: 'slider', min: 1, max: 10, label: 'Sleep quality', value: 5 },
-      { id: 'notes', type: 'textarea', label: 'Notes for today' }
+      {
+        id: 'mood',
+        type: 'slider',
+        min: 1,
+        max: 10,
+        label: 'Celková nálada (1=nejhorší, 10=nejlepší)',
+        value: 5,
+      },
+      { id: 'sleep', type: 'slider', min: 1, max: 10, label: 'Kvalita spánku', value: 5 },
+      { id: 'notes', type: 'textarea', label: 'Poznámky pro dnešek' },
     ],
-    assignedAt: '' // Will be set in onMounted
-  }
+    assignedAt: '', // Will be set in onMounted
+  },
 ]
 
 onMounted(() => {
@@ -292,7 +315,7 @@ async function loadWorksheets() {
         type: t.type,
         fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
         status: 'available' as const,
-        assignedAt: new Date().toISOString()
+        assignedAt: new Date().toISOString(),
       }))
       return
     }
@@ -300,11 +323,13 @@ async function loadWorksheets() {
     isGuestMode.value = false
 
     // Fetch patient-specific worksheets from API
-    const response = await fetch(`/api/worksheets?patient_id=${encodeURIComponent(patientId.value)}`)
-    
+    const response = await fetch(
+      `/api/worksheets?patient_id=${encodeURIComponent(patientId.value)}`,
+    )
+
     if (response.ok) {
       const patientWorksheets = await response.json()
-      
+
       if (patientWorksheets.length > 0) {
         worksheets.value = patientWorksheets.map((pw: any) => ({
           id: pw.template_id,
@@ -312,7 +337,7 @@ async function loadWorksheets() {
           type: pw.type,
           fields: typeof pw.fields === 'string' ? JSON.parse(pw.fields) : pw.fields,
           status: pw.status,
-          assignedAt: pw.assigned_at
+          assignedAt: pw.assigned_at,
         }))
       } else {
         // Fall back to templates if no personalized worksheets
@@ -322,7 +347,7 @@ async function loadWorksheets() {
           type: t.type,
           fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
           status: 'available' as const,
-          assignedAt: new Date().toISOString()
+          assignedAt: new Date().toISOString(),
         }))
       }
     } else {
@@ -333,11 +358,11 @@ async function loadWorksheets() {
         type: t.type,
         fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
         status: 'available' as const,
-        assignedAt: new Date().toISOString()
+        assignedAt: new Date().toISOString(),
       }))
     }
   } catch (err: any) {
-    error.value = `Failed to load worksheets: ${err.message}`
+    error.value = `Nepodařilo se načíst pracovní listy: ${err.message}`
     worksheets.value = []
   } finally {
     loading.value = false
@@ -369,16 +394,20 @@ function printWorksheet(worksheet: Worksheet) {
   const printContent = document.createElement('div')
   printContent.innerHTML = `
     <h2>${worksheet.title}</h2>
-    ${worksheet.fields.map(f => `
+    ${worksheet.fields
+        .map(
+          (f) => `
       <div style="margin-bottom: 16px;">
         <strong>${f.label}</strong><br/>
         <div style="border-bottom: 1px solid #ccc; min-height: 24px; margin-top: 4px;">
           ${responses.value[f.id] || ''}
         </div>
       </div>
-    `).join('')}
+    `,
+        )
+        .join('')}
     <div style="margin-top: 24px; font-size: 12px; color: #666;">
-      Printed from Education Platform - ${new Date().toLocaleDateString()}
+      Vytištěno z Vzdělávací platformy - ${new Date().toLocaleDateString()}
     </div>
   `
 
@@ -412,16 +441,16 @@ function printWorksheet(worksheet: Worksheet) {
 }
 
 async function submitWorksheet() {
-  if (!activeWorksheet.value) return;
+  if (!activeWorksheet.value) return
 
-  const worksheet = activeWorksheet.value;
-  const responseData = { ...responses.value };
-  const now = new Date().toISOString();
+  const worksheet = activeWorksheet.value
+  const responseData = { ...responses.value }
+  const now = new Date().toISOString()
 
   // Mark as completed
-  worksheet.completed = true;
-  worksheet.responseData = responseData;
-  worksheet['submittedAt'] = now; // Use bracket notation to avoid TS error
+  worksheet.completed = true
+  worksheet.responseData = responseData
+  worksheet['submittedAt'] = now // Use bracket notation to avoid TS error
 
   // TODO (MySQL): Replace with API call to education-patients database
   // await fetch(`/api/education-patients/worksheets/${patientId.value}/submit`, {
@@ -435,27 +464,27 @@ async function submitWorksheet() {
 
   // Store response in localStorage for now
   if (patientId.value) {
-    const responseKey = `patient_responses_${patientId.value}`;
-    const existing = localStorage.getItem(responseKey);
-    const responsesList = existing ? JSON.parse(existing) : [];
+    const responseKey = `patient_responses_${patientId.value}`
+    const existing = localStorage.getItem(responseKey)
+    const responsesList = existing ? JSON.parse(existing) : []
     responsesList.push({
       worksheetId: worksheet.id,
       worksheetTitle: worksheet.title,
       responses: responseData,
-      submittedAt: now
-    });
-    localStorage.setItem(responseKey, JSON.stringify(responsesList));
+      submittedAt: now,
+    })
+    localStorage.setItem(responseKey, JSON.stringify(responsesList))
   }
 
   // Update worksheet in list
-  const index = worksheets.value.findIndex(w => w.id === worksheet.id);
+  const index = worksheets.value.findIndex((w) => w.id === worksheet.id)
   if (index !== -1) {
-    worksheets.value[index] = { ...worksheet };
+    worksheets.value[index] = { ...worksheet }
   }
 
-  activeWorksheet.value = null;
+  activeWorksheet.value = null
 
-  alert('Worksheet submitted successfully!');
+  alert('Worksheet submitted successfully!')
 }
 
 function clearId() {

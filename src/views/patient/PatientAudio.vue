@@ -3,12 +3,15 @@
     <!-- Breadcrumb / Back Navigation -->
     <div class="row mb-3">
       <div class="col-12">
-        <router-link to="/patients/home" class="text-decoration-none text-muted d-flex align-items-center">
+        <router-link
+          to="/patients/home"
+          class="text-decoration-none text-muted d-flex align-items-center"
+        >
           <i class="bi bi-arrow-left me-2"></i> Zpět na přehled
         </router-link>
       </div>
     </div>
-    
+
     <div class="row justify-content-center">
       <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm border-0 rounded-4">
@@ -26,10 +29,17 @@
             </div>
 
             <div v-else class="list-group list-group-flush">
-              <div v-for="clip in audioClips" :key="clip.id" class="list-group-item px-0 py-3 border-bottom">
+              <div
+                v-for="clip in audioClips"
+                :key="clip.id"
+                class="list-group-item px-0 py-3 border-bottom"
+              >
                 <div class="d-flex align-items-center">
                   <div class="flex-shrink-0 me-3">
-                    <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <button
+                      class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                      style="width: 48px; height: 48px"
+                    >
                       <i class="bi bi-play-fill fs-4"></i>
                     </button>
                   </div>
@@ -45,12 +55,13 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="alert alert-light border mt-4 mb-0 rounded-3">
               <div class="d-flex">
                 <i class="bi bi-info-circle text-primary me-3 fs-5"></i>
                 <div class="small">
-                  Poslech těchto nahrávek nenahrazuje terapeutické sezení, ale slouží jako podpora mezi nimi.
+                  Poslech těchto nahrávek nenahrazuje terapeutické sezení, ale slouží jako podpora
+                  mezi nimi.
                 </div>
               </div>
             </div>
@@ -82,7 +93,7 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-@use "sass:color";
+@use 'sass:color';
 
 .btn-primary {
   background-color: $primary-color;

@@ -6,11 +6,9 @@
           <div class="hero-content text-center">
             <h1 class="hero-title mb-3">
               <i class="bi bi-heart-pulse text-primary me-2"></i>
-              Doctor Portal
+              Portál pro lékaře
             </h1>
-            <p class="hero-subtitle text-muted mb-5">
-              Your AI-powered medical research assistant
-            </p>
+            <p class="hero-subtitle text-muted mb-5">Váš lékařský výzkumný asistent s AI</p>
 
             <!-- Main Input -->
             <div class="input-container mb-4">
@@ -32,11 +30,11 @@
                   :disabled="!selectedModule || !userQuery.trim()"
                 >
                   <i class="bi bi-send me-2"></i>
-                  Go
+                  Odeslat
                 </button>
               </div>
               <p v-if="!selectedModule" class="text-muted small mt-2">
-                Select a module below first, then enter your request
+                Nejprve vyberte modul níže, pak zadejte požadavek
               </p>
             </div>
 
@@ -48,7 +46,7 @@
                 @click="selectModule('chat')"
               >
                 <i class="bi bi-chat-dots-fill fs-4 d-block mb-2"></i>
-                <span>Medical Chat</span>
+                <span>Lékařský chat</span>
               </button>
               <button
                 class="module-btn btn btn-outline-success"
@@ -56,7 +54,7 @@
                 @click="selectModule('pubmed')"
               >
                 <i class="bi bi-journal-medical fs-4 d-block mb-2"></i>
-                <span>PubMed Search</span>
+                <span>Vyhledávání PubMed</span>
               </button>
               <button
                 class="module-btn btn btn-outline-warning"
@@ -64,7 +62,7 @@
                 @click="selectModule('research')"
               >
                 <i class="bi bi-book fs-4 d-block mb-2"></i>
-                <span>Research Notebook</span>
+                <span>Výzkumný sešit</span>
               </button>
               <button
                 class="module-btn btn btn-outline-info"
@@ -72,25 +70,25 @@
                 @click="selectModule('transcribe')"
               >
                 <i class="bi bi-mic fs-4 d-block mb-2"></i>
-                <span>Audio Transcription</span>
+                <span>Přepis audia</span>
               </button>
             </div>
 
             <!-- Quick Actions -->
             <div class="quick-actions mt-5">
-              <p class="text-muted small mb-3">Quick Access</p>
+              <p class="text-muted small mb-3">Rychlý přístup</p>
               <div class="d-flex justify-content-center gap-2 flex-wrap">
                 <router-link to="/doctor/chat" class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-chat-dots me-1"></i> Chats
+                  <i class="bi bi-chat-dots me-1"></i> Chaty
                 </router-link>
                 <router-link to="/doctor/transcription" class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-mic me-1"></i> Transcription
+                  <i class="bi bi-mic me-1"></i> Přepis
                 </router-link>
                 <router-link to="/doctor/education" class="btn btn-sm btn-outline-secondary">
                   <i class="bi bi-search me-1"></i> PubMed
                 </router-link>
                 <router-link to="/doctor/research" class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-journal-bookmark me-1"></i> Research
+                  <i class="bi bi-journal-bookmark me-1"></i> Výzkum
                 </router-link>
               </div>
             </div>
@@ -112,15 +110,15 @@ const selectedModule = ref<string | null>(null)
 
 const placeholderText = computed(() => {
   if (!selectedModule.value) {
-    return 'Select a module below first...'
+    return 'Nejprve vyberte modul níže...'
   }
   const placeholders: Record<string, string> = {
-    chat: 'Describe what you want to discuss...',
-    pubmed: 'What medical topic do you want to search?',
-    research: 'What would you like to research?',
-    transcribe: 'Describe the audio you want transcribed...'
+    chat: 'Popište, o čem chcete hovořit...',
+    pubmed: 'Jaké lékařské téma chcete vyhledat?',
+    research: 'O čem byste chtěli výzkum provést?',
+    transcribe: 'Popište audio, které chcete přepsat...',
   }
-  return placeholders[selectedModule.value] || 'How can I help you today?'
+  return placeholders[selectedModule.value] || 'Jak vám mohu dnes pomoci?'
 })
 
 function selectModule(module: string) {
@@ -133,7 +131,7 @@ function handleRequest() {
 
   const query = encodeURIComponent(userQuery.value.trim())
 
-switch (selectedModule.value) {
+  switch (selectedModule.value) {
     case 'chat':
       router.push('/doctor/chat')
       break
@@ -145,7 +143,11 @@ switch (selectedModule.value) {
       break
     case 'transcribe':
       const notes = userQuery.value.trim() ? `Doctor's note: ${userQuery.value.trim()}` : ''
-      router.push(notes ? `/doctor/transcription?notes=${encodeURIComponent(notes)}` : '/doctor/transcription')
+      router.push(
+        notes
+          ? `/doctor/transcription?notes=${encodeURIComponent(notes)}`
+          : '/doctor/transcription',
+      )
       break
   }
 }

@@ -4,25 +4,37 @@
       <div class="col-md-10">
         <div class="card shadow-sm border-0">
           <div class="card-header bg-white border-bottom">
-            <h4 class="card-title mb-1">Audio Library</h4>
+            <h4 class="card-title mb-1">Audio knihovna</h4>
             <p class="card-text text-muted mb-0 small">
-              Guided meditations, breathing exercises, and educational podcasts.
+              Vedené meditace, dechová cvičení a vzdělávací podcasty.
             </p>
           </div>
           <div class="card-body">
             <!-- Now Playing Bar -->
-            <div v-if="currentEpisode" class="now-playing-bar mb-4 p-3 bg-light rounded-4 d-flex align-items-center gap-3">
+            <div
+              v-if="currentEpisode"
+              class="now-playing-bar mb-4 p-3 bg-light rounded-4 d-flex align-items-center gap-3"
+            >
               <div class="flex-grow-1">
                 <div class="fw-bold">{{ currentEpisode.title }}</div>
                 <div class="small text-muted">
-                  {{ isPlaying ? 'Now Playing' : 'Paused' }} • {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+                  {{ isPlaying ? 'Právě hraje' : 'Pozastaveno' }} • {{ formatTime(currentTime) }} /
+                  {{ formatTime(duration) }}
                 </div>
               </div>
               <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-primary rounded-circle" @click="togglePlay()" style="width: 40px; height: 40px;">
+                <button
+                  class="btn btn-sm btn-primary rounded-circle"
+                  @click="togglePlay()"
+                  style="width: 40px; height: 40px"
+                >
                   <i :class="isPlaying ? 'bi bi-pause-fill' : 'bi bi-play-fill'"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-secondary rounded-circle" @click="stopPlayback()" style="width: 40px; height: 40px;">
+                <button
+                  class="btn btn-sm btn-outline-secondary rounded-circle"
+                  @click="stopPlayback()"
+                  style="width: 40px; height: 40px"
+                >
                   <i class="bi bi-stop-fill"></i>
                 </button>
               </div>
@@ -31,9 +43,9 @@
             <!-- Loading State -->
             <div v-if="loading" class="text-center py-5">
               <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+                <span class="visually-hidden">Načítání...</span>
               </div>
-              <p class="mt-3">Loading audio resources...</p>
+              <p class="mt-3">Načítání audio zdrojů...</p>
             </div>
 
             <!-- Error State -->
@@ -45,8 +57,8 @@
             <!-- Audio List -->
             <div v-else-if="episodes.length === 0" class="text-center py-5">
               <i class="bi bi-music-note-list display-4 text-muted mb-4"></i>
-              <h5>No audio podcasts found</h5>
-              <p class="text-muted">Check back later for audio content.</p>
+              <h5>Nenalezeny žádné audio podcasty</h5>
+              <p class="text-muted">Zkontrolujte později pro audio obsah.</p>
             </div>
 
             <div v-else class="d-flex flex-column gap-3">
@@ -56,12 +68,20 @@
                     <!-- Play Button -->
                     <button
                       class="btn rounded-circle flex-shrink-0"
-                      :class="currentEpisode?.id === item.id && isPlaying ? 'btn-primary' : 'btn-outline-primary'"
+                      :class="
+                        currentEpisode?.id === item.id && isPlaying
+                          ? 'btn-primary'
+                          : 'btn-outline-primary'
+                      "
                       @click="playEpisode(item)"
-                      style="width: 48px; height: 48px;"
+                      style="width: 48px; height: 48px"
                     >
                       <i
-                        :class="currentEpisode?.id === item.id && isPlaying ? 'bi bi-pause-fill' : 'bi bi-play-fill'"
+                        :class="
+                          currentEpisode?.id === item.id && isPlaying
+                            ? 'bi bi-pause-fill'
+                            : 'bi bi-play-fill'
+                        "
                       ></i>
                     </button>
 
@@ -79,7 +99,7 @@
 
                       <!-- Progress Bar (shown when this episode is playing) -->
                       <div v-if="currentEpisode?.id === item.id" class="mt-2">
-                        <div class="progress" style="height: 6px;">
+                        <div class="progress" style="height: 6px">
                           <div
                             class="progress-bar bg-primary"
                             :style="{ width: progressPercent + '%' }"
@@ -94,14 +114,14 @@
                         download
                         class="btn btn-sm btn-outline-success"
                       >
-                        <i class="bi bi-download me-1"></i> Download
+                        <i class="bi bi-download me-1"></i> Stáhnout
                       </a>
                       <button
                         v-if="item.sources && item.sources.length > 0"
                         class="btn btn-sm btn-outline-info"
                         @click="showSources(item)"
                       >
-                        <i class="bi bi-journal-text me-1"></i> Sources
+                        <i class="bi bi-journal-text me-1"></i> Zdroje
                       </button>
                     </div>
                   </div>
@@ -117,7 +137,7 @@
     <div
       v-if="selectedItem"
       class="modal fade show"
-      style="display: block; background: rgba(0, 0, 0, 0.5);"
+      style="display: block; background: rgba(0, 0, 0, 0.5)"
       @click.self="selectedItem = null"
     >
       <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -127,16 +147,24 @@
               <i class="bi bi-journal-text me-2"></i>
               Sources: {{ selectedItem.title }}
             </h5>
-            <button type="button" class="btn-close btn-close-white" @click="selectedItem = null"></button>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              @click="selectedItem = null"
+            ></button>
           </div>
           <div class="modal-body">
             <div v-if="itemSources.length === 0" class="text-center text-muted py-3">
-              No sources listed for this item.
+              Pro tuto položku nejsou uvedeny žádné zdroje.
             </div>
             <div v-else>
-              <div v-for="(source, index) in itemSources" :key="source.id || index" class="card mb-3 border-0 shadow-sm">
+              <div
+                v-for="(source, index) in itemSources"
+                :key="source.id || index"
+                class="card mb-3 border-0 shadow-sm"
+              >
                 <div class="card-body">
-                  <h6 class="card-title">{{ source.title || 'Untitled Source' }}</h6>
+                  <h6 class="card-title">{{ source.title || 'Nepojmenovaný zdroj' }}</h6>
                   <p v-if="source.author" class="text-muted small mb-1">
                     <i class="bi bi-person me-1"></i> {{ source.author }}
                   </p>
@@ -151,7 +179,7 @@
                       target="_blank"
                       class="btn btn-sm btn-outline-primary me-2"
                     >
-                      <i class="bi bi-box-arrow-up-right me-1"></i> Visit
+                      <i class="bi bi-box-arrow-up-right me-1"></i> Navštívit
                     </a>
                     <a
                       v-if="source.links.doi"
@@ -178,15 +206,13 @@
       @ended="onEnded"
       @canplay="cacheAudio(currentEpisode)"
     >
-      Your browser does not support the audio element.
+      Váš prohlížeč nepodporuje audio prvek.
     </audio>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-
-
 
 interface ResourceItem {
   id: string
@@ -300,11 +326,14 @@ function playEpisode(item: ResourceItem) {
   if (audioPlayer.value) {
     audioPlayer.value.src = getAssetUrl(item.asset_url)
     audioPlayer.value.load()
-    audioPlayer.value.play().then(() => {
-      isPlaying.value = true
-    }).catch(err => {
-      console.error('[AudioLibrary] Playback failed:', err)
-    })
+    audioPlayer.value
+      .play()
+      .then(() => {
+        isPlaying.value = true
+      })
+      .catch((err) => {
+        console.error('[AudioLibrary] Playback failed:', err)
+      })
   }
 }
 
@@ -315,11 +344,14 @@ function togglePlay() {
     audioPlayer.value.pause()
     isPlaying.value = false
   } else {
-    audioPlayer.value.play().then(() => {
-      isPlaying.value = true
-    }).catch(err => {
-      console.error('[AudioLibrary] Playback failed:', err)
-    })
+    audioPlayer.value
+      .play()
+      .then(() => {
+        isPlaying.value = true
+      })
+      .catch((err) => {
+        console.error('[AudioLibrary] Playback failed:', err)
+      })
   }
 }
 
@@ -336,9 +368,7 @@ function stopPlayback() {
 function updateTime() {
   if (!audioPlayer.value) return
   currentTime.value = audioPlayer.value.currentTime
-  progressPercent.value = duration.value > 0
-    ? (currentTime.value / duration.value) * 100
-    : 0
+  progressPercent.value = duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0
 }
 
 function updateDuration() {
@@ -380,7 +410,7 @@ function showSources(item: ResourceItem) {
   itemSources.value = []
 
   if (item.sources && sources.value) {
-    item.sources.forEach(sourceId => {
+    item.sources.forEach((sourceId) => {
       const source = sources.value[sourceId]
       if (source) {
         itemSources.value.push(source)

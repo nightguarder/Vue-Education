@@ -10,7 +10,7 @@ const contactEmail = 'cyril.steger@tutamail.com'
 
 const submitForm = () => {
   const mailtoLink = `mailto:${contactEmail}?subject=${encodeURIComponent(subject.value)}&body=${encodeURIComponent(
-    `Jméno: ${name.value}\nEmail: ${email.value}\n\n${message.value}`
+    `Jméno: ${name.value}\nEmail: ${email.value}\n\n${message.value}`,
   )}`
   window.location.href = mailtoLink
 }
@@ -31,12 +31,7 @@ const submitForm = () => {
             <BCardBody class="p-4">
               <BForm @submit.prevent="submitForm">
                 <BFormGroup label="Jméno" label-for="name" class="mb-3">
-                  <BFormInput
-                    id="name"
-                    v-model="name"
-                    placeholder="Vaše jméno"
-                    required
-                  />
+                  <BFormInput id="name" v-model="name" placeholder="Vaše jméno" required />
                 </BFormGroup>
 
                 <BFormGroup label="Email" label-for="email" class="mb-3">

@@ -1,5 +1,4 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <main class="education-page">
@@ -18,7 +17,7 @@
     </section>
 
     <!-- Portal Selection Section -->
-    <section class="portals-section py-5 bg-light">
+    <section class="portals-section py-5">
       <BContainer>
         <BRow class="g-4 justify-content-center">
           <!-- Doctors Portal Card -->
@@ -140,7 +139,11 @@
     <!-- Contact CTA -->
     <section class="cta-section py-4">
       <BContainer class="text-center">
-        <p class="mb-0 text-muted">Máte dotazy? Kontaktujte nás pro více informací.</p>
+        <p class="mb-0 text-muted">
+          Máte dotazy?
+          <RouterLink to="/contact" class="text-primary">Kontaktujte nás</RouterLink> pro více
+          informací.
+        </p>
       </BContainer>
     </section>
   </main>
@@ -149,10 +152,6 @@
 <style scoped lang="scss">
 .hero-section {
   background-color: #ffffff;
-}
-
-.portals-section {
-  background-color: #f8f9fa;
 }
 
 .portal-card {

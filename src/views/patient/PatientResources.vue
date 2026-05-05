@@ -4,9 +4,9 @@
       <div class="col-md-10">
         <div class="card shadow-sm border-0">
           <div class="card-header bg-white border-bottom">
-            <h4 class="card-title mb-1">Educational Resources</h4>
+            <h4 class="card-title mb-1">Vzdělávací zdroje</h4>
             <p class="card-text text-muted mb-0 small">
-              Infographics and audio podcasts from our educational repository.
+              Infografiky a audio podcasty z našeho vzdělávacího repozitáře.
             </p>
           </div>
           <div class="card-body">
@@ -18,19 +18,18 @@
                   :class="{ active: activeTab === 'infographics' }"
                   @click="activeTab = 'infographics'"
                 >
-                  <i class="bi bi-card-image me-1"></i> Infographics
+                  <i class="bi bi-card-image me-1"></i> Infografiky
                   <span class="badge bg-primary ms-1">{{ infographics.length }}</span>
                 </a>
               </li>
-
             </ul>
 
             <!-- Loading State -->
             <div v-if="loading" class="text-center py-5">
               <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+                <span class="visually-hidden">Načítání...</span>
               </div>
-              <p class="mt-3">Loading resources from repository...</p>
+              <p class="mt-3">Načítání zdrojů z repozitáře...</p>
             </div>
 
             <!-- Error State -->
@@ -43,8 +42,8 @@
             <div v-else-if="activeTab === 'infographics'">
               <div v-if="infographics.length === 0" class="text-center py-5">
                 <i class="bi bi-card-image display-4 text-muted mb-4"></i>
-                <h5>No infographics found</h5>
-                <p class="text-muted">Check back later for educational materials.</p>
+                <h5>Nenalezeny žádné infografiky</h5>
+                <p class="text-muted">Zkontrolujte později pro vzdělávací materiály.</p>
               </div>
 
               <div v-else class="row g-4">
@@ -83,21 +82,21 @@
                           download
                           class="btn btn-sm btn-outline-primary"
                         >
-                          <i class="bi bi-download me-1"></i> Download
+                          <i class="bi bi-download me-1"></i> Stáhnout
                         </a>
                         <button
                           v-if="item.sources && item.sources.length > 0"
                           class="btn btn-sm btn-outline-info"
                           @click="showSources(item)"
                         >
-                          <i class="bi bi-journal-text me-1"></i> Sources
+                          <i class="bi bi-journal-text me-1"></i> Zdroje
                         </button>
                         <button
                           v-if="item.content_path"
                           class="btn btn-sm btn-outline-secondary"
                           @click="viewContent(item)"
                         >
-                          <i class="bi bi-file-text me-1"></i> Details
+                          <i class="bi bi-file-text me-1"></i> Podrobnosti
                         </button>
                       </div>
                     </div>
@@ -105,8 +104,6 @@
                 </div>
               </div>
             </div>
-
-
           </div>
         </div>
       </div>
@@ -124,7 +121,7 @@
           <div class="modal-header bg-info text-white">
             <h5 class="modal-title">
               <i class="bi bi-journal-text me-2"></i>
-              Sources: {{ selectedItem.title }}
+              Zdroje: {{ selectedItem.title }}
             </h5>
             <button
               type="button"
@@ -134,7 +131,7 @@
           </div>
           <div class="modal-body">
             <div v-if="itemSources.length === 0" class="text-center text-muted py-3">
-              No sources listed for this item.
+              Pro tuto položku nejsou uvedeny žádné zdroje.
             </div>
             <div v-else>
               <div
@@ -143,7 +140,7 @@
                 class="card mb-3 border-0 shadow-sm"
               >
                 <div class="card-body">
-                  <h6 class="card-title">{{ source.title || 'Untitled Source' }}</h6>
+                  <h6 class="card-title">{{ source.title || 'Nepojmenovaný zdroj' }}</h6>
                   <p v-if="source.author" class="text-muted small mb-1">
                     <i class="bi bi-person me-1"></i> {{ source.author }}
                   </p>
@@ -158,7 +155,7 @@
                       target="_blank"
                       class="btn btn-sm btn-outline-primary me-2"
                     >
-                      <i class="bi bi-box-arrow-up-right me-1"></i> Visit
+                      <i class="bi bi-box-arrow-up-right me-1"></i> Navštívit
                     </a>
                     <a
                       v-if="source.links.doi"
@@ -181,7 +178,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-
 
 interface ResourceItem {
   id: string
@@ -269,7 +265,7 @@ function getThumbnailUrl(item: ResourceItem): string {
   if (item.thumbnail_url) {
     return item.thumbnail_url
   }
-  
+
   // Fallback to asset_url if thumbnail_url is missing
   if (!item.asset_url) return ''
   return item.asset_url

@@ -5,50 +5,46 @@
         <div class="card shadow-sm border-0">
           <div class="card-header bg-white border-bottom">
             <h4 class="card-title mb-1">
-              <i class="bi bi-chat-quote me-2"></i>Session Feedback
+              <i class="bi bi-chat-quote me-2"></i>Zpětná vazba k platformě
             </h4>
             <p class="card-text text-muted mb-0 small">
-              Share your experience after completing an education session.
+              Podělte se o své zkušenosti z používání naší platformy.
             </p>
           </div>
           <div class="card-body">
             <!-- Patient ID Input -->
             <div class="mb-4">
-              <label class="form-label fw-bold">Patient ID (Optional)</label>
+              <label class="form-label fw-bold">ID pacienta: (nepovinné)</label>
               <div class="input-group">
                 <input
                   v-model="patientId"
                   type="text"
                   class="form-control"
-                  placeholder="Enter your patient ID for personalized tracking"
+                  placeholder="Zadejte své ID pacienta pro personalizované sledování"
                 />
-                <button
-                  class="btn btn-outline-secondary"
-                  @click="patientId = ''"
-                  title="Clear"
-                >
+                <button class="btn btn-outline-secondary" @click="patientId = ''" title="Vymazat">
                   <i class="bi bi-x-lg"></i>
                 </button>
               </div>
-              <div class="form-text">Leave empty for anonymous feedback</div>
+              <div class="form-text">Ponechte prázdné pro anonymní zpětnou vazbu</div>
             </div>
 
             <!-- Session Type -->
             <div class="mb-4">
-              <label class="form-label fw-bold">Session Type</label>
-              <select v-model="sessionType" class="form-select">
-                <option value="">Select session type...</option>
-                <option value="worksheet">Worksheet Completion</option>
+              <label class="form-label fw-bold">Typ modulu:</label>
+              <select v-model="moduleType" class="form-select">
+                <option value="">Vyberte typ modulu...</option>
+                <option value="worksheet">Pracovní list</option>
                 <option value="audio">Audio / Podcast</option>
-                <option value="resource">Resource Review</option>
-                <option value="stress">Stress Relief Exercise</option>
-                <option value="other">Other</option>
+                <option value="resource">Infografika / Zdroj</option>
+                <option value="stress">Cvičení na uvolnění stresu</option>
+                <option value="other">Jiné</option>
               </select>
             </div>
 
             <!-- Rating -->
             <div class="mb-4">
-              <label class="form-label fw-bold">How helpful was this session?</label>
+              <label class="form-label fw-bold">Jak moc se Vám tento modul líbil?</label>
               <div class="d-flex gap-3 justify-content-center mt-2">
                 <button
                   v-for="star in 5"
@@ -59,19 +55,19 @@
                   <i
                     class="bi"
                     :class="star <= rating ? 'bi-star-fill text-warning' : 'bi-star text-muted'"
-                    style="font-size: 2rem;"
+                    style="font-size: 2rem"
                   ></i>
                 </button>
               </div>
               <div class="text-center text-muted small mt-1">
-                {{ ratingLabels[rating] || 'Click to rate' }}
+                {{ ratingLabels[rating] || 'Klikněte pro hodnocení' }}
               </div>
             </div>
 
             <!-- Difficulty -->
             <div class="mb-4">
-              <label class="form-label fw-bold">Difficulty Level</label>
-              <div class="d-flex gap-2 flex-wrap">
+              <label class="form-label fw-bold">Úroveň obtížnosti:</label>
+              <div class="d-flex gap-2 justify-content-center mt-2">
                 <button
                   v-for="level in difficultyLevels"
                   :key="level.value"
@@ -86,18 +82,18 @@
 
             <!-- Comments -->
             <div class="mb-4">
-              <label class="form-label fw-bold">Comments (Optional)</label>
+              <label class="form-label fw-bold">Komentář: (nepovinné)</label>
               <textarea
                 v-model="comments"
                 class="form-control"
                 rows="4"
-                placeholder="What did you find most helpful? Any suggestions for improvement?"
+                placeholder="Co vám bylo nejužitečnější? Jaké máte návrhy na zlepšení?"
               ></textarea>
             </div>
 
             <!-- Would Recommend -->
             <div class="mb-4">
-              <label class="form-label fw-bold">Would you recommend this to others?</label>
+              <label class="form-label fw-bold">Doporučili byste toto ostatním?</label>
               <div class="d-flex gap-3">
                 <div class="form-check">
                   <input
@@ -108,7 +104,7 @@
                     id="recommend-yes"
                   />
                   <label class="form-check-label" for="recommend-yes">
-                    <i class="bi bi-hand-thumbs-up text-success me-1"></i> Yes
+                    <i class="bi bi-hand-thumbs-up text-success me-1"></i> Ano
                   </label>
                 </div>
                 <div class="form-check">
@@ -120,7 +116,7 @@
                     id="recommend-no"
                   />
                   <label class="form-check-label" for="recommend-no">
-                    <i class="bi bi-hand-thumbs-down text-danger me-1"></i> No
+                    <i class="bi bi-hand-thumbs-down text-danger me-1"></i> Ne
                   </label>
                 </div>
               </div>
@@ -131,18 +127,18 @@
               <button
                 class="btn btn-primary btn-lg"
                 @click="submitFeedback"
-                :disabled="submitting || rating === 0 || !sessionType"
+                :disabled="submitting || rating === 0 || !moduleType"
               >
                 <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
                 <i v-else class="bi bi-send me-2"></i>
-                {{ submitted ? 'Submitted!' : 'Submit Feedback' }}
+                {{ submitted ? 'Odesláno!' : 'Odeslat zpětnou vazbu' }}
               </button>
             </div>
 
             <!-- Success Message -->
             <div v-if="submitted" class="alert alert-success mt-3">
               <i class="bi bi-check-circle me-2"></i>
-              Thank you for your feedback! Your response helps us improve.
+              Děkujeme za vaši zpětnou vazbu! Vaše odpověď nám pomáhá se zlepšovat.
             </div>
           </div>
         </div>
@@ -151,7 +147,7 @@
         <div v-if="patientId && feedbackHistory.length > 0" class="card shadow-sm border-0 mt-4">
           <div class="card-header bg-white border-bottom">
             <h5 class="card-title mb-0">
-              <i class="bi bi-clock-history me-2"></i>Your Previous Feedback
+              <i class="bi bi-clock-history me-2"></i>Vaše předchozí zpětná vazba
             </h5>
           </div>
           <div class="card-body">
@@ -162,7 +158,7 @@
             >
               <div class="d-flex justify-content-between align-items-start">
                 <div>
-                  <span class="badge bg-light text-dark border">{{ item.sessionType }}</span>
+                  <span class="badge bg-light text-dark border">{{ item.moduleType }}</span>
                   <span class="ms-2 text-warning">
                     <i v-for="star in item.rating" :key="star" class="bi bi-star-fill small"></i>
                   </span>
@@ -185,7 +181,7 @@ import { ref, watch } from 'vue'
 
 interface FeedbackEntry {
   patientId?: string
-  sessionType: string
+  moduleType: string
   rating: number
   difficulty: string
   comments: string
@@ -195,7 +191,7 @@ interface FeedbackEntry {
 
 // State
 const patientId = ref('')
-const sessionType = ref('')
+const moduleType = ref('')
 const rating = ref(0)
 const difficulty = ref('')
 const comments = ref('')
@@ -205,18 +201,18 @@ const submitted = ref(false)
 const feedbackHistory = ref<FeedbackEntry[]>([])
 
 const ratingLabels: Record<number, string> = {
-  1: 'Not helpful at all',
-  2: 'Somewhat helpful',
-  3: 'Helpful',
-  4: 'Very helpful',
-  5: 'Extremely helpful'
+  1: 'Vůbec nepomohlo',
+  2: 'Trochu pomohlo',
+  3: 'Pomohlo',
+  4: 'Velmi pomohlo',
+  5: 'Mimořádně pomohlo',
 }
 
 const difficultyLevels = [
-  { value: 'too-easy', label: 'Too Easy' },
-  { value: 'just-right', label: 'Just Right' },
-  { value: 'challenging', label: 'Challenging' },
-  { value: 'too-hard', label: 'Too Hard' }
+  { value: 'too-easy', label: 'Příliš lehké' },
+  { value: 'just-right', label: 'Akorát' },
+  { value: 'challenging', label: 'Náročné' },
+  { value: 'too-hard', label: 'Příliš těžké' },
 ]
 
 // Load history when patient ID changes
@@ -230,9 +226,11 @@ watch(patientId, (newId) => {
 
 function loadFeedbackHistory(id: string) {
   try {
-    const allFeedback = JSON.parse(localStorage.getItem('patientFeedback') || '[]') as FeedbackEntry[]
+    const allFeedback = JSON.parse(
+      localStorage.getItem('patientFeedback') || '[]',
+    ) as FeedbackEntry[]
     feedbackHistory.value = allFeedback
-      .filter(f => f.patientId === id)
+      .filter((f) => f.patientId === id)
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
   } catch {
     feedbackHistory.value = []
@@ -240,23 +238,25 @@ function loadFeedbackHistory(id: string) {
 }
 
 async function submitFeedback() {
-  if (rating.value === 0 || !sessionType.value) return
+  if (rating.value === 0 || !moduleType.value) return
 
   submitting.value = true
 
   try {
     const entry: FeedbackEntry = {
       patientId: patientId.value || undefined,
-      sessionType: sessionType.value,
+      moduleType: moduleType.value,
       rating: rating.value,
       difficulty: difficulty.value,
       comments: comments.value,
       wouldRecommend: wouldRecommend.value ?? true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }
 
     // Save to localStorage (TODO: replace with MySQL API)
-    const allFeedback = JSON.parse(localStorage.getItem('patientFeedback') || '[]') as FeedbackEntry[]
+    const allFeedback = JSON.parse(
+      localStorage.getItem('patientFeedback') || '[]',
+    ) as FeedbackEntry[]
     allFeedback.push(entry)
     localStorage.setItem('patientFeedback', JSON.stringify(allFeedback))
 
@@ -267,7 +267,7 @@ async function submitFeedback() {
 
     // Reset form
     submitted.value = true
-    sessionType.value = ''
+    moduleType.value = ''
     rating.value = 0
     difficulty.value = ''
     comments.value = ''
@@ -291,7 +291,7 @@ function formatDate(isoString: string): string {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
