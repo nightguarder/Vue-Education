@@ -22,12 +22,10 @@ const currentYear = computed(() => new Date().getFullYear())
             <li>Česká republika</li>
           </ul>
         </BCol>
-    <BCol class="text-end">
+        <BCol class="text-end">
           <BNav vertical class="footer-nav">
             <BNavItem>
-              <RouterLink to="/" class="footer-link" aria-label="Domů">
-                Domů
-              </RouterLink>
+              <RouterLink to="/" class="footer-link" aria-label="Domů"> Domů </RouterLink>
             </BNavItem>
             <BNavItem>
               <RouterLink to="/patients/home" class="footer-link" aria-label="Portál pro pacienty">

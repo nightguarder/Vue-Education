@@ -27,9 +27,7 @@
           </BDropdownItem>
         </BNavItemDropdown>
         <BNavItemDropdown text="Portál pro lékaře">
-          <BDropdownItem :to="'/doctor/home'">
-            <i class="bi bi-house me-2"></i>Domů
-          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/home'"> <i class="bi bi-house me-2"></i>Domů </BDropdownItem>
           <BDropdownItem :to="'/doctor/chat'">
             <i class="bi bi-chat-dots me-2"></i>Chaty
           </BDropdownItem>
@@ -53,8 +51,17 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from "vue-router";
-import { BNavbar, BNavbarToggle, BCollapse, BNavbarNav, BNavbarBrand, BNavItemDropdown, BDropdownItem, BDropdownDivider } from "bootstrap-vue-next";
+import { RouterLink } from 'vue-router'
+import {
+  BNavbar,
+  BNavbarToggle,
+  BCollapse,
+  BNavbarNav,
+  BNavbarBrand,
+  BNavItemDropdown,
+  BDropdownItem,
+  BDropdownDivider,
+} from 'bootstrap-vue-next'
 </script>
 
 <style scoped>

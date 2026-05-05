@@ -43,11 +43,14 @@ export interface WorksheetResponse {
 // API Functions
 
 export async function fetchPatientWorksheets(patientId: string): Promise<PatientWorksheet[]> {
-  const response = await fetch(`${getApiBase()}/worksheets?patient_id=${encodeURIComponent(patientId)}`, {
-    headers: {
-      'Accept': 'application/json'
-    }
-  })
+  const response = await fetch(
+    `${getApiBase()}/worksheets?patient_id=${encodeURIComponent(patientId)}`,
+    {
+      headers: {
+        Accept: 'application/json',
+      },
+    },
+  )
 
   if (!response.ok) {
     throw new Error(`Failed to fetch worksheets: ${response.statusText}`)
@@ -59,8 +62,8 @@ export async function fetchPatientWorksheets(patientId: string): Promise<Patient
 export async function fetchWorksheetTemplates(): Promise<WorksheetTemplate[]> {
   const response = await fetch(`${getApiBase()}/templates`, {
     headers: {
-      'Accept': 'application/json'
-    }
+      Accept: 'application/json',
+    },
   })
 
   if (!response.ok) {
@@ -73,18 +76,18 @@ export async function fetchWorksheetTemplates(): Promise<WorksheetTemplate[]> {
 export async function submitWorksheetResponse(
   patientId: string,
   worksheetId: number,
-  responsesData: Record<string, any>
+  responsesData: Record<string, any>,
 ): Promise<{ success: boolean; message: string }> {
   const response = await fetch(`${getApiBase()}/worksheets/submit`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       patient_id: patientId,
       worksheet_id: worksheetId,
-      responses: responsesData
-    })
+      responses: responsesData,
+    }),
   })
 
   if (!response.ok) {
@@ -98,9 +101,9 @@ export async function createPatient(patient: Patient): Promise<{ success: boolea
   const response = await fetch(`${getApiBase()}/patients`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify(patient)
+    body: JSON.stringify(patient),
   })
 
   if (!response.ok) {

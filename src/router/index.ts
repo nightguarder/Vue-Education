@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
@@ -11,7 +11,7 @@ const router = createRouter({
     // Patient portal routes
     {
       path: '/patients',
-      redirect: '/patients/home'
+      redirect: '/patients/home',
     },
     {
       path: '/patients/home',
@@ -48,10 +48,15 @@ const router = createRouter({
       name: 'patient-feedback',
       component: () => import('../views/patient/PatientFeedback.vue'),
     },
+    {
+      path: '/doctor/feedback',
+      name: 'doctor-feedback',
+      component: () => import('../views/PatientFeedback.vue'),
+    },
     // Doctor portal routes
     {
       path: '/doctor',
-      redirect: '/doctor/home'
+      redirect: '/doctor/home',
     },
     {
       path: '/doctor/home',

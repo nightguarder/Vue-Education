@@ -11,37 +11,36 @@ const BROWSER_MODEL = 'postgrammar/LFM2.5-1.2B-Thinking-ONNX' // Approximation f
 const downloadProgress = ref(0)
 const isDownloading = ref(false)
 
-
-
 // Fallback responses if browser model fails
 const fallbackResponses = [
-  "Your feelings are valid. It's okay to feel what you're feeling.",
-  "Every day is a new opportunity. You're stronger than you think.",
-  "Don't give up. Small steps lead to big changes.",
-  "You matter exactly as you are.",
-  "It's okay to ask for help.",
-  "The future is full of possibilities.",
-  "Feelings are temporary. This moment will pass too.",
-  "You're more resilient than you realize."
+  'Vaše pocity jsou platné. Je v pořádku cítit to, co cítíte.',
+  'Každý den je novou příležitostí. Jste silnější, než si myslíte.',
+  'Nezoufejte. Malé kroky vedou k velkým změnám.',
+  'Jste důležití přesně tak, jak jste.',
+  'Budoucnost je plná možností.',
+  'Pocity jsou dočasné. Tento okamžik také pomine.',
+  'Jste odolnější, než si uvědomujete.',
 ]
 
 // Theme detection and prompts
 const themeKeywords: Record<string, string[]> = {
-  'sadness': ['sad', 'depressed', 'down', 'unhappy', 'grief', 'lonely'],
-  'anxiety': ['anxious', 'worried', 'stress', 'nervous', 'panic', 'overwhelmed'],
-  'fear': ['scared', 'afraid', 'fear', 'terrified'],
-  'anger': ['angry', 'mad', 'frustrated', 'annoyed'],
-  'tired': ['tired', 'exhausted', 'sleepy', 'fatigue'],
-  'hope': ['hopeless', 'lost', 'confused', 'purpose', 'meaning']
+  sadness: ['sad', 'depressed', 'down', 'unhappy', 'grief', 'lonely'],
+  anxiety: ['anxious', 'worried', 'stress', 'nervous', 'panic', 'overwhelmed'],
+  fear: ['scared', 'afraid', 'fear', 'terrified'],
+  anger: ['angry', 'mad', 'frustrated', 'annoyed'],
+  tired: ['tired', 'exhausted', 'sleepy', 'fatigue'],
+  hope: ['hopeless', 'lost', 'confused', 'purpose', 'meaning'],
 }
 
 const themePrompts: Record<string, string> = {
-  'sadness': 'Generate a short inspirational quote about finding light in darkness and that difficult feelings pass. Max 2 sentences.',
-  'anxiety': 'Generate a short calming quote about finding peace and that worrying does not help. Max 2 sentences.',
-  'fear': 'Generate a short encouraging quote about being brave and that fear is temporary. Max 2 sentences.',
-  'anger': 'Generate a short quote about releasing anger and finding inner calm. Max 2 sentences.',
-  'tired': 'Generate a short quote about rest and that it is okay to pause. Max 2 sentences.',
-  'hope': 'Generate a short hopeful quote about new beginnings and that things can get better. Max 2 sentences.'
+  sadness:
+    'Generate a short inspirational quote about finding light in darkness and that difficult feelings pass. Max 2 sentences.',
+  anxiety:
+    'Generate a short calming quote about finding peace and that worrying does not help. Max 2 sentences.',
+  fear: 'Generate a short encouraging quote about being brave and that fear is temporary. Max 2 sentences.',
+  anger: 'Generate a short quote about releasing anger and finding inner calm. Max 2 sentences.',
+  tired: 'Generate a short quote about rest and that it is okay to pause. Max 2 sentences.',
+  hope: 'Generate a short hopeful quote about new beginnings and that things can get better. Max 2 sentences.',
 }
 
 function detectTheme(text: string): string | null {
@@ -69,7 +68,7 @@ function cleanResponse(text: string): string {
 export function useStressReliefAI() {
   function isDownloadAllowed(): boolean {
     if (!navigator.onLine) return false
-    
+
     // Check if WebGPU is supported
     if (!navigator.gpu) return false
 
@@ -117,7 +116,7 @@ export function useStressReliefAI() {
           if (x.status === 'progress' && x.progress) {
             downloadProgress.value = x.progress
           }
-        }
+        },
       })
 
       console.log('[StressReliefAI] Browser model loaded successfully')
@@ -146,9 +145,10 @@ export function useStressReliefAI() {
     if (browserPipeline) {
       try {
         const theme = detectTheme(normalizedText)
-        let prompt = theme && themePrompts[theme]
-          ? themePrompts[theme]
-          : 'Generate a short inspirational quote about inner peace and strength. Max 2 sentences.'
+        let prompt =
+          theme && themePrompts[theme]
+            ? themePrompts[theme]
+            : 'Generate a short inspirational quote about inner peace and strength. Max 2 sentences.'
 
         // Using simple prompting for LFM2.5 base model
         const output = await browserPipeline(prompt, {
@@ -159,7 +159,7 @@ export function useStressReliefAI() {
         })
 
         let quote = output[0]?.generated_text || ''
-        
+
         // Remove the prompt from the generated text if it's there
         if (quote.startsWith(prompt)) {
           quote = quote.substring(prompt.length).trim()
@@ -179,7 +179,9 @@ export function useStressReliefAI() {
   }
 
   async function generateDailyQuote(): Promise<string> {
-    return generateResponse('Generate a short inspirational quote to start the day. Max 2 sentences.')
+    return generateResponse(
+      'Generate a short inspirational quote to start the day. Max 2 sentences.',
+    )
   }
 
   function getRandomQuote(): string {
@@ -202,7 +204,6 @@ export function useStressReliefAI() {
     generateDailyQuote,
     getRandomQuote,
     isModelReady,
-    isDownloadAllowed
+    isDownloadAllowed,
   }
 }
-

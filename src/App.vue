@@ -9,12 +9,18 @@ import AppLayout from './components/layout/AppLayout.vue'
 </template>
 
 <style lang="scss">
-@use "sass:color";
+@use 'sass:color';
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   background-color: #f8f9fa;
   color: #333;
 }

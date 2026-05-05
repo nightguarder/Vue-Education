@@ -69,6 +69,6 @@ export function useTranslation() {
     loadModel,
     translate,
     translateToEnglish,
-    translateToCzech
+    translateToCzech,
   }
 }

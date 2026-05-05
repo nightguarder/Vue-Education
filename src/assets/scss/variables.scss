@@ -1,10 +1,9 @@
 // Brand Colors
 $primary-color: #4db9a0;
-$secondary-color: #0d5373; 
+$secondary-color: #0d5373;
 
 // Root variables for CSS access
 :root {
   --primary-color: #{$primary-color};
   --secondary-color: #{$secondary-color};
 }
-

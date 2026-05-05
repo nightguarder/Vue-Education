@@ -31,10 +31,9 @@ class Translator {
           loaded.set(e.file, e.loaded)
           const allLoaded = Array.from(loaded.values()).reduce(
             (acc: number, curr: number) => acc + curr,
-            0
+            0,
           )
-          const percentLoaded =
-            Math.round((100 / Translator.size) * allLoaded * 100) / 100
+          const percentLoaded = Math.round((100 / Translator.size) * allLoaded * 100) / 100
           if (newProgress !== percentLoaded) {
             newProgress = percentLoaded
             onProgress?.(newProgress)
@@ -46,11 +45,7 @@ class Translator {
     })
   }
 
-  public async translate(
-    text: string,
-    sourceLang: string,
-    targetLang: string
-  ): Promise<string> {
+  public async translate(text: string, sourceLang: string, targetLang: string): Promise<string> {
     if (!this.pipeline) {
       throw new Error('Translator not initialized. Call init() first.')
     }
