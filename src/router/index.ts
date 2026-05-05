@@ -41,7 +41,7 @@ const router = createRouter({
     {
       path: '/patients/infographics',
       name: 'patient-infographics',
-      component: () => import('../views/patient/PatientResources.vue'),
+      component: () => import('../views/patient/PatientInfographics.vue'),
     },
     {
       path: '/patients/feedback',

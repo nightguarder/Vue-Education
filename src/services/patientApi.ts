@@ -23,16 +23,8 @@ export interface Worksheet {
   submittedAt?: string
 }
 
-export interface AudioClip {
-  id: number
-  title: string
-  audioUrl: string
-  duration: string
-}
-
 export interface PatientData {
   worksheets: Worksheet[]
-  audioClips: AudioClip[]
 }
 
 export interface WorksheetResponse {
@@ -142,20 +134,6 @@ export const patientApi = {
                     pdfUrl: '/worksheets/cbt-basics.pdf',
                   },
                 ],
-          audioClips: [
-            {
-              id: 1,
-              title: 'Vedená meditace pro úzkost',
-              audioUrl: '/audio/guided-meditation-anxiety.mp3',
-              duration: '10:30',
-            },
-            {
-              id: 2,
-              title: 'Dechová cvičení',
-              audioUrl: '/audio/breathing-exercises.mp3',
-              duration: '5:15',
-            },
-          ],
         }
 
         resolve(mockData)
