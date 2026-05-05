@@ -30,8 +30,9 @@
                 </label>
               </div>
 
+              <!-- WebGPU Model Load Button -->
               <button
-                v-if="useLocalModel && !modelReady"
+                v-if="useLocalModel && !webGpuModelReady"
                 class="btn btn-sm"
                 :class="isLoading ? 'btn-warning' : 'btn-outline-warning'"
                 @click="loadTranscriptionModel"
@@ -43,9 +44,15 @@
                   isLoading ? `Načítání... ${Math.round(downloadProgress)}%` : 'Načíst WebGPU model'
                 }}
               </button>
-              <span v-else-if="useLocalModel && modelReady" class="badge bg-warning text-dark">
+              <span v-else-if="useLocalModel && webGpuModelReady" class="badge bg-warning text-dark">
                 <i class="bi bi-check-circle me-1"></i> WebGPU připraveno
               </span>
+
+              <!-- OMLX Ready Status -->
+              <span v-if="!useLocalModel" class="badge bg-success">
+                <i class="bi bi-check-circle me-1"></i> OMLX připraveno
+              </span>
+
               <span v-if="error" class="badge bg-danger">{{ error }}</span>
             </div>
           </div>
@@ -201,6 +208,40 @@
                   </button>
                 </div>
               </div>
+
+              <!-- Transcription Metrics -->
+              <div class="mb-3 p-3 bg-light rounded border">
+                <div class="row g-3">
+                  <div class="col-auto">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-clock text-primary"></i>
+                      <div>
+                        <div class="small text-muted">Délka audia</div>
+                        <div class="fw-bold">{{ formatDuration(audioDuration) }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-speedometer2 text-success"></i>
+                      <div>
+                        <div class="small text-muted">Čas přepisu (TTT)</div>
+                        <div class="fw-bold">{{ transcriptionTime }}s</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-bar-chart text-info"></i>
+                      <div>
+                        <div class="small text-muted">Poměr</div>
+                        <div class="fw-bold">{{ transcriptionRatio }}x</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                   <span class="text-muted small">
@@ -248,7 +289,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTranscription } from '@/composables/useTranscription'
 
@@ -277,6 +318,40 @@ const patientNotes = ref('')
 // Dev: Pasted text
 const pastedText = ref('')
 
+async function createChatFromPasted() {
+  if (!pastedText.value.trim() || !patientName.value) return
+
+  const chatId = generateChatId()
+  const chatData = {
+    chatId,
+    patientName: patientName.value,
+    patientAge: patientAge.value,
+    patientGender: patientGender.value,
+    patientNotes: patientNotes.value,
+    createdAt: new Date().toISOString(),
+    lastActivity: new Date().toISOString(),
+    transcript: pastedText.value,
+    messages: [
+      {
+        role: 'system',
+        content: `Patient: ${patientName.value}${patientAge.value ? `, Age: ${patientAge.value}` : ''}${patientGender.value ? `, Gender: ${patientGender.value}` : ''}${patientNotes.value ? `\nNotes: ${patientNotes.value}` : ''}`,
+      },
+      {
+        role: 'user',
+        content: `[Audio Transcript]\n\n${pastedText.value}`,
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  }
+
+  saveChatToLocalStorage(chatData)
+
+  createdChat.value = {
+    chatId,
+    patientName: patientName.value,
+  }
+}
+
 // Audio state
 const isDragging = ref(false)
 const audioFile = ref<File | null>(null)
@@ -289,6 +364,7 @@ const transcriptionStatus = ref('')
 const transcriptionResult = ref('')
 const transcriptionStartTime = ref(0)
 const transcriptionEndTime = ref(0)
+const webGpuModelReady = ref(false)
 
 // Created chat
 const createdChat = ref<{ chatId: string; patientName: string } | null>(null)
@@ -296,6 +372,17 @@ const createdChat = ref<{ chatId: string; patientName: string } | null>(null)
 // Format transcription - replace SentencePiece ▁ with spaces
 const formattedTranscription = computed(() => {
   return transcriptionResult.value.replace(/▁/g, ' ').trim()
+})
+
+// Transcription time metrics
+const transcriptionTime = computed(() => {
+  if (!transcriptionEndTime.value || !transcriptionStartTime.value) return 0
+  return Math.round((transcriptionEndTime.value - transcriptionStartTime.value) / 1000)
+})
+
+const transcriptionRatio = computed(() => {
+  if (!transcriptionTime.value || !audioDuration.value) return 0
+  return (audioDuration.value / transcriptionTime.value).toFixed(1)
 })
 
 onMounted(() => {
@@ -306,7 +393,10 @@ onMounted(() => {
 })
 
 async function loadTranscriptionModel() {
-  await loadModel()
+  const result = await loadModel()
+  if (result) {
+    webGpuModelReady.value = true
+  }
 }
 
 function handleFileSelect(event: Event) {
@@ -346,6 +436,11 @@ function setAudioFile(file: File) {
     return
   }
 
+  // Clean up previous URL
+  if (audioUrl.value) {
+    URL.revokeObjectURL(audioUrl.value)
+  }
+
   audioFile.value = file
   audioUrl.value = URL.createObjectURL(file)
 
@@ -367,48 +462,22 @@ function clearFile() {
   createdChat.value = null
 }
 
-function generateChatId(): string {
-  return (
-    'CHAT-' +
-    Date.now().toString(36).toUpperCase() +
-    '-' +
-    Math.random().toString(36).substring(2, 6).toUpperCase()
-  )
-}
-
-async function createChatFromPasted() {
-  if (!pastedText.value.trim() || !patientName.value) return
-
-  const chatId = generateChatId()
-  const chatData = {
-    chatId,
-    patientName: patientName.value,
-    patientAge: patientAge.value,
-    patientGender: patientGender.value,
-    patientNotes: patientNotes.value,
-    createdAt: new Date().toISOString(),
-    lastActivity: new Date().toISOString(),
-    transcript: pastedText.value,
-    messages: [
-      {
-        role: 'system',
-        content: `Patient: ${patientName.value}${patientAge.value ? `, Age: ${patientAge.value}` : ''}${patientGender.value ? `, Gender: ${patientGender.value}` : ''}${patientNotes.value ? `\nNotes: ${patientNotes.value}` : ''}`,
-      },
-      {
-        role: 'user',
-        content: `[Audio Transcript]\n\n${pastedText.value}`,
-        timestamp: new Date().toISOString(),
-      },
-    ],
+// Watch mode toggle to reset WebGPU ready state
+watch(useLocalModel, (newVal) => {
+  if (!newVal) {
+    // Switched to OMLX mode
+    webGpuModelReady.value = false
   }
+})
 
-  saveChatToLocalStorage(chatData)
-
-  createdChat.value = {
-    chatId,
-    patientName: patientName.value,
+// Auto-dismiss chat notification after 10 seconds
+watch(createdChat, (newVal) => {
+  if (newVal) {
+    setTimeout(() => {
+      createdChat.value = null
+    }, 10000)
   }
-}
+})
 
 function saveChatToLocalStorage(chatData: any) {
   try {
@@ -425,13 +494,20 @@ function saveChatToLocalStorage(chatData: any) {
 }
 
 async function startTranscription() {
-  if (!audioFile.value || !modelReady.value || !patientName.value) return
+  if (!audioFile.value || !patientName.value) return
+
+  // Check if WebGPU model is needed but not ready
+  if (useLocalModel && !webGpuModelReady.value) {
+    alert('Please load the WebGPU model first.')
+    return
+  }
 
   isTranscribing.value = true
   transcriptionStatus.value = 'Processing audio...'
   transcriptionResult.value = ''
   createdChat.value = null
   transcriptionStartTime.value = Date.now()
+  transcriptionEndTime.value = 0
 
   try {
     const result = await transcribeFile(audioFile.value, (status) => {
@@ -502,6 +578,15 @@ function downloadTranscript() {
   a.download = `transcript-${Date.now()}.txt`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+function generateChatId(): string {
+  return (
+    'CHAT-' +
+    Date.now().toString(36).toUpperCase() +
+    '-' +
+    Math.random().toString(36).substring(2, 6).toUpperCase()
+  )
 }
 </script>
 

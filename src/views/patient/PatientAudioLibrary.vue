@@ -24,6 +24,14 @@
               </div>
               <div class="d-flex gap-2">
                 <button
+                  class="btn btn-sm btn-outline-secondary rounded-circle"
+                  @click="seek(-15)"
+                  style="width: 40px; height: 40px"
+                  title="Zpět o 15 sekund"
+                >
+                  <i class="bi bi-rewind-fill"></i>
+                </button>
+                <button
                   class="btn btn-sm btn-primary rounded-circle"
                   @click="togglePlay()"
                   style="width: 40px; height: 40px"
@@ -36,6 +44,14 @@
                   style="width: 40px; height: 40px"
                 >
                   <i class="bi bi-stop-fill"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary rounded-circle"
+                  @click="seek(15)"
+                  style="width: 40px; height: 40px"
+                  title="Vpřed o 15 sekund"
+                >
+                  <i class="bi bi-fast-forward-fill"></i>
                 </button>
               </div>
             </div>
@@ -54,16 +70,23 @@
               {{ error }}
             </div>
 
-            <!-- Audio List -->
+            <!-- Audio List Grouped by Topic -->
             <div v-else-if="episodes.length === 0" class="text-center py-5">
               <i class="bi bi-music-note-list display-4 text-muted mb-4"></i>
               <h5>Nenalezeny žádné audio podcasty</h5>
               <p class="text-muted">Zkontrolujte později pro audio obsah.</p>
             </div>
 
-            <div v-else class="d-flex flex-column gap-3">
-              <div v-for="item in episodes" :key="item.id" class="card border-0 shadow-sm">
-                <div class="card-body">
+            <div v-else class="d-flex flex-column gap-4">
+              <div v-for="group in topicGroups" :key="group.theme" class="topic-section">
+                <h5 class="topic-header mb-3">
+                  <i class="bi bi-folder me-2"></i>
+                  {{ group.displayName }}
+                  <span class="badge bg-primary ms-2">{{ group.items.length }}</span>
+                </h5>
+                <div class="d-flex flex-column gap-3">
+                  <div v-for="item in group.items" :key="item.id" class="card border-0 shadow-sm">
+                    <div class="card-body">
                   <div class="d-flex align-items-start gap-3">
                     <!-- Play Button -->
                     <button
@@ -123,9 +146,18 @@
                       >
                         <i class="bi bi-journal-text me-1"></i> Zdroje
                       </button>
+                      <button
+                        v-if="item.content_path"
+                        class="btn btn-sm btn-outline-secondary"
+                        @click="viewContent(item)"
+                      >
+                        <i class="bi bi-file-text me-1"></i> Podrobnosti
+                      </button>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
               </div>
             </div>
           </div>
@@ -198,6 +230,47 @@
       </div>
     </div>
 
+    <!-- Content Modal (Markdown) -->
+    <div
+      v-if="contentItem"
+      class="modal fade show"
+      style="display: block; background: rgba(0, 0, 0, 0.5)"
+      @click.self="contentItem = null"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-file-text me-2"></i>
+              {{ contentItem.title }}
+            </h5>
+            <button type="button" class="btn-close" @click="contentItem = null"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="contentHtml === 'Načítání...'" class="text-center py-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Načítání...</span>
+              </div>
+            </div>
+            <div v-else class="markdown-content" v-html="contentHtml"></div>
+          </div>
+          <div class="modal-footer">
+            <a
+              v-if="contentItem.content_path"
+              :href="getAssetUrl(contentItem.content_path)"
+              target="_blank"
+              class="btn btn-outline-primary"
+            >
+              <i class="bi bi-box-arrow-up-right me-1"></i> Otevřít v novém okně
+            </a>
+            <button type="button" class="btn btn-secondary" @click="contentItem = null">
+              Zavřít
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Hidden Audio Element -->
     <audio
       ref="audioPlayer"
@@ -213,6 +286,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { marked } from 'marked'
+
+// Configure marked for GFM support
+marked.setOptions({ gfm: true })
 
 interface ResourceItem {
   id: string
@@ -221,6 +298,7 @@ interface ResourceItem {
   type?: string
   subtype?: string
   asset_url?: string
+  content_path?: string
   sources?: string[]
   tags?: string[]
 }
@@ -261,6 +339,10 @@ const selectedItem = ref<ResourceItem | null>(null)
 const itemSources = ref<Source[]>([])
 const sources = ref<Record<string, Source>>({})
 
+// Content modal (Markdown)
+const contentItem = ref<ResourceItem | null>(null)
+const contentHtml = ref<string>('')
+
 // Cache for offline
 const cache = ref<Map<string, Blob>>(new Map())
 
@@ -284,6 +366,11 @@ async function fetchManifest() {
 
   try {
     const manifestUrl = import.meta.env.VITE_GITHUB_URL
+
+    if (!manifestUrl) {
+      throw new Error('VITE_GITHUB_URL is not defined. Please create a .env file with VITE_GITHUB_URL=https://nightguarder.github.io/Vue-Education-Materials/manifest.json')
+    }
+
     const response = await fetch(manifestUrl)
 
     if (!response.ok) {
@@ -293,12 +380,49 @@ async function fetchManifest() {
     const manifest: Manifest = await response.json()
     episodes.value = manifest.episodes || []
     sources.value = manifest.sources || {}
+
+    // Group episodes by theme
+    groupByTheme()
   } catch (err: any) {
     error.value = `Failed to load audio resources: ${err.message}`
     console.error('[AudioLibrary] Manifest fetch failed:', err)
   } finally {
     loading.value = false
   }
+}
+
+// Group episodes by theme/topic
+interface TopicGroup {
+  theme: string
+  displayName: string
+  items: ResourceItem[]
+}
+
+const topicGroups = ref<TopicGroup[]>([])
+
+function groupByTheme() {
+  const groups: Record<string, ResourceItem[]> = {}
+
+  episodes.value.forEach((episode) => {
+    const theme = episode.theme || 'uncategorized'
+    if (!groups[theme]) {
+      groups[theme] = []
+    }
+    groups[theme].push(episode)
+  })
+
+  topicGroups.value = Object.entries(groups).map(([theme, items]) => ({
+    theme,
+    displayName: formatThemeName(theme),
+    items,
+  }))
+}
+
+function formatThemeName(theme: string): string {
+  return theme
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function getAssetUrl(assetPath?: string): string {
@@ -365,6 +489,15 @@ function stopPlayback() {
   progressPercent.value = 0
 }
 
+function seek(seconds: number) {
+  if (!audioPlayer.value || !currentEpisode.value) return
+
+  const newTime = audioPlayer.value.currentTime + seconds
+  audioPlayer.value.currentTime = Math.max(0, Math.min(newTime, audioPlayer.value.duration || 0))
+  currentTime.value = audioPlayer.value.currentTime
+  progressPercent.value = duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0
+}
+
 function updateTime() {
   if (!audioPlayer.value) return
   currentTime.value = audioPlayer.value.currentTime
@@ -418,6 +551,24 @@ function showSources(item: ResourceItem) {
     })
   }
 }
+
+async function viewContent(item: ResourceItem) {
+  if (!item.content_path) return
+
+  contentItem.value = item
+  contentHtml.value = 'Načítání...'
+
+  try {
+    const url = getAssetUrl(item.content_path)
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Failed to fetch content')
+    const markdown = await response.text()
+    contentHtml.value = await marked.parse(markdown)
+  } catch (err) {
+    contentHtml.value = 'Chyba při načítání obsahu.'
+    console.error('[AudioLibrary] Content fetch failed:', err)
+  }
+}
 </script>
 
 <style scoped>
@@ -430,5 +581,51 @@ function showSources(item: ResourceItem) {
 .card:hover {
   transform: translateY(-2px);
   transition: transform 0.2s;
+}
+
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content p {
+  margin-bottom: 1rem;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.markdown-content pre {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.markdown-content code {
+  background: #f8f9fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.topic-header {
+  color: #2c5282;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.topic-section {
+  margin-bottom: 2rem;
 }
 </style>
