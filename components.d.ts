@@ -31,5 +31,6 @@ declare module 'vue' {
     BRow: typeof import('bootstrap-vue-next/components/BContainer')['BRow']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SurveyQRCode: typeof import('./src/components/SurveyQRCode.vue')['default']
   }
 }
