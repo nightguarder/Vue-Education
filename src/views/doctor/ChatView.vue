@@ -325,7 +325,7 @@
           <button type="button" class="btn-close" @click="showQrModal = false"></button>
         </div>
         <div class="modal-body">
-          <SurveyQRCode :sessionId="currentChat?.chatId || ''" />
+          <SurveyQRCode :sessionId="currentChat?.chatId || ''" :patientName="currentChat?.patientName" />
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showQrModal = false">
@@ -335,6 +335,7 @@
       </div>
     </div>
   </div>
+
 </template>
 
 <script setup lang="ts">
@@ -356,6 +357,7 @@ interface ChatMessage {
 
 interface Chat {
   chatId: string
+  patientId?: string
   patientName: string
   patientAge?: number
   patientGender?: string

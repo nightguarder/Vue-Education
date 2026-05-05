@@ -48,8 +48,8 @@
               {{ error }}
             </div>
 
-            <!-- Infographics Tab -->
-            <div v-else-if="activeTab === 'infographics'">
+            <!-- Infographics Tab (v-show for proper structure) -->
+            <div v-show="!loading && !error && activeTab === 'infographics'">
               <div v-if="infographics.length === 0" class="text-center py-5">
                 <i class="bi bi-card-image display-4 text-muted mb-4"></i>
                 <h5>Nenalezeny žádné infografiky</h5>
@@ -72,98 +72,100 @@
                             :class="`orientation-container orientation-${item.orientation || 'unknown'}`"
                             style="height: 200px; background: #f8f9fa"
                           >
-                        <!-- Image thumbnail -->
-                        <img
-                          v-if="isImage(item) && !thumbnailError[item.id]"
-                          :src="getThumbnailUrl(item)"
-                          :alt="item.title"
-                          class="w-100 h-100"
-                          :style="{ objectFit: isPortrait(item) ? 'contain' : 'cover' }"
-                          @error="handleThumbnailError(item.id)"
-                        />
-                        <!-- Video thumbnail with play icon -->
-                        <div
-                          v-else-if="isVideo(item)"
-                          class="w-100 h-100 d-flex align-items-center justify-content-center position-relative"
-                        >
-                          <video
-                            v-if="!thumbnailError[item.id]"
-                            :src="getAssetUrl(item.asset_url)"
-                            class="w-100 h-100"
-                            :style="{ objectFit: 'cover' }"
-                            muted
-                            preload="metadata"
-                            @error="handleThumbnailError(item.id)"
-                          ></video>
-                          <div
-                            class="position-absolute top-50 start-50 translate-middle"
-                            style="z-index: 2"
-                          >
-                            <i
-                              class="bi bi-play-circle-fill text-white"
-                              style="font-size: 3rem; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5)"
-                            ></i>
+                            <!-- Image thumbnail -->
+                            <img
+                              v-if="isImage(item) && !thumbnailError[item.id]"
+                              :src="getThumbnailUrl(item)"
+                              :alt="item.title"
+                              class="w-100 h-100"
+                              :style="{ objectFit: isPortrait(item) ? 'contain' : 'cover' }"
+                              @error="handleThumbnailError(item.id)"
+                            />
+                            <!-- Video thumbnail with play icon -->
+                            <div
+                              v-else-if="isVideo(item)"
+                              class="w-100 h-100 d-flex align-items-center justify-content-center position-relative"
+                            >
+                              <video
+                                v-if="!thumbnailError[item.id]"
+                                :src="getAssetUrl(item.asset_url)"
+                                class="w-100 h-100"
+                                :style="{ objectFit: 'cover' }"
+                                muted
+                                preload="metadata"
+                                @error="handleThumbnailError(item.id)"
+                              ></video>
+                              <div
+                                class="position-absolute top-50 start-50 translate-middle"
+                                style="z-index: 2"
+                              >
+                                <i
+                                  class="bi bi-play-circle-fill text-white"
+                                  style="font-size: 3rem; text-shadow: 0 2px 8px rgba(0,0,0,0.5)"
+                                ></i>
+                              </div>
+                            </div>
+                            <!-- Fallback -->
+                            <div
+                              v-else
+                              class="w-100 h-100 d-flex align-items-center justify-content-center"
+                            >
+                              <i
+                                :class="isVideo(item) ? 'bi bi-film' : 'bi bi-card-image'"
+                                class="text-muted"
+                                style="font-size: 2rem"
+                              ></i>
+                            </div>
+                            <!-- Badge for video -->
+                            <span
+                              v-if="isVideo(item)"
+                              class="position-absolute top-0 end-0 badge bg-danger m-2"
+                            >
+                              <i class="bi bi-film me-1"></i> Video
+                            </span>
+                            <!-- Badge for orientation -->
+                            <span
+                              v-if="item.orientation"
+                              class="position-absolute bottom-0 end-0 badge m-2"
+                              :class="item.orientation === 'portrait' ? 'bg-info' : item.orientation === 'landscape' ? 'bg-success' : 'bg-secondary'"
+                            >
+                              <i
+                                :class="item.orientation === 'portrait' ? 'bi bi-phone' : item.orientation === 'landscape' ? 'bi bi-display' : 'bi bi-square'"
+                              ></i>
+                              {{ item.orientation }}
+                            </span>
+                          </div>
+                          <h5 class="card-title">{{ item.title }}</h5>
+                          <div class="mb-3">
+                            <span
+                              v-for="tag in item.tags"
+                              :key="tag"
+                              class="badge bg-light text-dark border me-1 mb-1"
+                            >
+                              {{ tag }}
+                            </span>
+                          </div>
+
+                          <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-outline-primary">
+                              <i class="bi bi-eye me-1"></i> Náhled
+                            </button>
+                            <a
+                              :href="getAssetUrl(item.asset_url)"
+                              download
+                              class="btn btn-sm btn-outline-success"
+                            >
+                              <i class="bi bi-download me-1"></i> Stáhnout
+                            </a>
+                            <button
+                              v-if="item.sources && item.sources.length > 0"
+                              class="btn btn-sm btn-outline-info"
+                              @click.stop="showSources(item)"
+                            >
+                              <i class="bi bi-journal-text me-1"></i> Zdroje
+                            </button>
                           </div>
                         </div>
-                        <!-- Fallback -->
-                        <div
-                          v-else
-                          class="w-100 h-100 d-flex align-items-center justify-content-center"
-                        >
-                          <i
-                            :class="isVideo(item) ? 'bi bi-film' : 'bi bi-card-image'"
-                            class="text-muted"
-                            style="font-size: 2rem"
-                          ></i>
-                        </div>
-                        <!-- Badge for video -->
-                        <span
-                          v-if="isVideo(item)"
-                          class="position-absolute top-0 end-0 badge bg-danger m-2"
-                        >
-                          <i class="bi bi-film me-1"></i> Video
-                        </span>
-                        <!-- Badge for orientation -->
-                        <span
-                          v-if="item.orientation"
-                          class="position-absolute top-0 start-0 badge m-2"
-                          :class="item.orientation === 'portrait' ? 'bg-info' : item.orientation === 'landscape' ? 'bg-success' : 'bg-secondary'"
-                        >
-                          <i
-                            :class="item.orientation === 'portrait' ? 'bi bi-phone' : item.orientation === 'landscape' ? 'bi bi-display' : 'bi bi-square'"
-                          ></i>
-                          {{ item.orientation }}
-                        </span>
-                      </div>
-                      <h5 class="card-title">{{ item.title }}</h5>
-                      <div class="mb-3">
-                        <span
-                          v-for="tag in item.tags"
-                          :key="tag"
-                          class="badge bg-light text-dark border me-1 mb-1"
-                        >
-                          {{ tag }}
-                        </span>
-                      </div>
-
-                      <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-sm btn-outline-primary">
-                          <i class="bi bi-eye me-1"></i> Náhled
-                        </button>
-                        <a
-                          :href="getAssetUrl(item.asset_url)"
-                          download
-                          class="btn btn-sm btn-outline-success"
-                        >
-                          <i class="bi bi-download me-1"></i> Stáhnout
-                        </a>
-                        <button
-                          v-if="item.sources && item.sources.length > 0"
-                          class="btn btn-sm btn-outline-info"
-                          @click.stop="showSources(item)"
-                        >
-                          <i class="bi bi-journal-text me-1"></i> Zdroje
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -172,7 +174,7 @@
             </div>
 
             <!-- Presentations Tab -->
-            <div v-else-if="activeTab === 'presentations'">
+            <div v-show="!loading && !error && activeTab === 'presentations'">
               <div v-if="presentations.length === 0" class="text-center py-5">
                 <i class="bi bi-file-earmark-pdf display-4 text-muted mb-4"></i>
                 <h5>Nenalezeny žádné prezentace</h5>
@@ -188,68 +190,70 @@
                   </h5>
                   <div class="row g-4">
                     <div v-for="item in group.items" :key="item.id" class="col-md-6 col-lg-4">
-                  <div class="card h-100 shadow-sm border-0" :class="getOrientationClass(item)" @click="openPdfPreview(item)">
-                    <div class="card-body">
-                        <div
-                          class="mb-3 rounded overflow-hidden position-relative"
-                          style="height: 200px; background: #f8f9fa"
-                        >
-                          <!-- PDF thumbnail -->
-                          <img
-                            v-if="item.thumbnail_url && !thumbnailError[item.id]"
-                            :src="item.thumbnail_url"
-                            :alt="item.title"
-                            class="w-100 h-100"
-                            style="object-fit: contain"
-                            @error="handleThumbnailError(item.id)"
-                          />
+                      <div class="card h-100 shadow-sm border-0" :class="getOrientationClass(item)" @click="openPdfPreview(item)">
+                        <div class="card-body">
                           <div
-                            v-else
-                            class="w-100 h-100 d-flex align-items-center justify-content-center"
+                            class="mb-3 rounded overflow-hidden position-relative"
+                            style="height: 200px; background: #f8f9fa"
                           >
-                            <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 3rem"></i>
+                            <!-- PDF thumbnail -->
+                            <img
+                              v-if="item.thumbnail_url && !thumbnailError[item.id]"
+                              :src="item.thumbnail_url"
+                              :alt="item.title"
+                              class="w-100 h-100"
+                              style="object-fit: contain"
+                              @error="handleThumbnailError(item.id)"
+                            />
+                            <div
+                              v-else
+                              class="w-100 h-100 d-flex align-items-center justify-content-center"
+                            >
+                              <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 3rem"></i>
+                            </div>
+                            <!-- Orientation badge -->
+                            <span
+                              v-if="item.orientation"
+                              class="position-absolute bottom-0 end-0 badge m-2"
+                              :class="item.orientation === 'portrait' ? 'bg-info' : item.orientation === 'landscape' ? 'bg-success' : 'bg-secondary'"
+                            >
+                              <i
+                                :class="item.orientation === 'portrait' ? 'bi bi-phone' : item.orientation === 'landscape' ? 'bi bi-display' : 'bi bi-square'"
+                              ></i>
+                              {{ item.orientation }}
+                            </span>
                           </div>
-                          <!-- Orientation badge -->
-                          <span
-                            v-if="item.orientation"
-                            class="position-absolute bottom-0 end-0 badge m-2"
-                            :class="item.orientation === 'portrait' ? 'bg-info' : item.orientation === 'landscape' ? 'bg-success' : 'bg-secondary'"
-                          >
-                            <i
-                              :class="item.orientation === 'portrait' ? 'bi bi-phone' : item.orientation === 'landscape' ? 'bi bi-display' : 'bi bi-square'"
-                            ></i>
-                            {{ item.orientation }}
-                          </span>
-                        </div>
-                      <h5 class="card-title">{{ item.title }}</h5>
-                      <div class="mb-3">
-                        <span
-                          v-for="tag in item.tags"
-                          :key="tag"
-                          class="badge bg-light text-dark border me-1 mb-1"
-                        >
-                          {{ tag }}
-                        </span>
-                      </div>
+                          <h5 class="card-title">{{ item.title }}</h5>
+                          <div class="mb-3">
+                            <span
+                              v-for="tag in item.tags"
+                              :key="tag"
+                              class="badge bg-light text-dark border me-1 mb-1"
+                            >
+                              {{ tag }}
+                            </span>
+                          </div>
 
-                      <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-sm btn-outline-primary">
-                          <i class="bi bi-eye me-1"></i> Zobrazit PDF
-                        </button>
-                        <a
-                          :href="getAssetUrl(item.asset_url)"
-                          download
-                          class="btn btn-sm btn-outline-success"
-                        >
-                          <i class="bi bi-download me-1"></i> Stáhnout
-                        </a>
-                        <button
-                          v-if="item.sources && item.sources.length > 0"
-                          class="btn btn-sm btn-outline-info"
-                          @click.stop="showSources(item)"
-                        >
-                          <i class="bi bi-journal-text me-1"></i> Zdroje
-                        </button>
+                          <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-outline-primary">
+                              <i class="bi bi-eye me-1"></i> Zobrazit PDF
+                            </button>
+                            <a
+                              :href="getAssetUrl(item.asset_url)"
+                              download
+                              class="btn btn-sm btn-outline-success"
+                            >
+                              <i class="bi bi-download me-1"></i> Stáhnout
+                            </a>
+                            <button
+                              v-if="item.sources && item.sources.length > 0"
+                              class="btn btn-sm btn-outline-info"
+                              @click.stop="showSources(item)"
+                            >
+                              <i class="bi bi-journal-text me-1"></i> Zdroje
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -279,7 +283,7 @@
               v-if="isImage(previewItem)"
               :src="getAssetUrl(previewItem.asset_url)"
               :alt="previewItem.title"
-              class="img-fluid rounded"
+              class="img-fluid rounded shadow-sm"
               style="max-height: 70vh"
             />
             <video
@@ -293,12 +297,8 @@
             </video>
           </div>
           <div class="modal-footer">
-            <a
-              :href="getAssetUrl(previewItem.asset_url)"
-              download
-              class="btn btn-primary w-100"
-            >
-              <i class="bi bi-download me-1"></i> Stáhnout
+            <a :href="getAssetUrl(previewItem.asset_url)" download class="btn btn-primary w-100">
+              <i class="bi bi-download me-2"></i> Stáhnout
             </a>
           </div>
         </div>
@@ -329,12 +329,8 @@
             ></iframe>
           </div>
           <div class="modal-footer">
-            <a
-              :href="getAssetUrl(previewItem.asset_url)"
-              download
-              class="btn btn-primary w-100"
-            >
-              <i class="bi bi-download me-1"></i> Stáhnout PDF
+            <a :href="getAssetUrl(previewItem.asset_url)" download class="btn btn-primary w-100">
+              <i class="bi bi-download me-2"></i> Stáhnout PDF
             </a>
           </div>
         </div>
@@ -577,27 +573,11 @@ async function fetchManifest() {
     const manifest: Manifest = await response.json()
 
     infographics.value = manifest.infographics || []
-    presentations.value = manifest.presentations || {}
+    presentations.value = manifest.presentations || []
     sources.value = manifest.sources || {}
 
     // Group by theme
     groupByTheme()
-
-    // Preload thumbnails for offline caching
-    preloadThumbnails()
-  } catch (err: any) {
-    error.value = `Failed to load resources: ${err.message}. Please check your connection.`
-    console.error('[Resources] Manifest fetch failed:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-    const manifest: Manifest = await response.json()
-
-    infographics.value = manifest.infographics || []
-    presentations.value = manifest.presentations || []
-    sources.value = manifest.sources || {}
 
     // Preload thumbnails for offline caching
     preloadThumbnails()

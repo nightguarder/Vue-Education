@@ -12,7 +12,7 @@
 
             <!-- Model Status -->
             <div class="mt-2 d-flex align-items-center gap-3 flex-wrap">
-              <!-- Toggle Switch (unchecked = OMLX default, checked = WebGPU experimental) -->
+              <!-- Mode Toggle (First) -->
               <div class="form-check form-switch d-flex align-items-center gap-2">
                 <input
                   class="form-check-input"
@@ -26,36 +26,44 @@
                       useLocalModel ? 'bi bi-gpu-card text-warning' : 'bi bi-server text-success'
                     "
                   ></i>
-                  {{ useLocalModel ? 'WebGPU (experimental)' : 'OMLX (default)' }}
+                  {{ useLocalModel ? 'WebGPU (experimentální)' : 'OMLX (výchozí)' }}
                 </label>
               </div>
 
-              <!-- WebGPU Model Load Button -->
-              <button
-                v-if="useLocalModel && !webGpuModelReady"
-                class="btn btn-sm"
-                :class="isLoading ? 'btn-warning' : 'btn-outline-warning'"
-                @click="loadTranscriptionModel"
-                :disabled="isLoading"
-              >
-                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                <i v-else class="bi bi-download me-2"></i>
-                {{
-                  isLoading ? `Načítání... ${Math.round(downloadProgress)}%` : 'Načíst WebGPU model'
-                }}
-              </button>
-              <span v-else-if="useLocalModel && webGpuModelReady" class="badge bg-warning text-dark">
-                <i class="bi bi-check-circle me-1"></i> WebGPU připraveno
-              </span>
+              <!-- OMLX Mode (Default) - Always Ready -->
+              <div v-if="!useLocalModel" class="d-flex align-items-center gap-2">
+                <span class="badge bg-success">
+                  <i class="bi bi-check-circle me-1"></i> Připraveno okamžitě
+                </span>
+                <small class="text-muted">žádné načítání není potřeba</small>
+              </div>
 
-              <!-- OMLX Ready Status -->
-              <span v-if="!useLocalModel" class="badge bg-success">
-                <i class="bi bi-check-circle me-1"></i> OMLX připraveno
-              </span>
+              <!-- WebGPU Mode (Experimental) -->
+              <div v-else class="d-flex align-items-center gap-2 flex-wrap">
+                <button
+                  v-if="!webGpuModelReady"
+                  class="btn btn-sm"
+                  :class="isLoading ? 'btn-warning' : 'btn-outline-warning'"
+                  @click="loadTranscriptionModel"
+                  :disabled="isLoading"
+                >
+                  <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i v-else class="bi bi-download me-2"></i>
+                  {{
+                    isLoading ? `Načítání... ${Math.round(downloadProgress)}%` : 'Načíst model (60-85MB)'
+                  }}
+                </button>
+                <span v-else class="badge bg-success">
+                  <i class="bi bi-check-circle me-1"></i> Model připraven
+                </span>
+              </div>
 
               <span v-if="error" class="badge bg-danger">{{ error }}</span>
             </div>
-          </div>
+
+
+              <span v-if="error" class="badge bg-danger">{{ error }}</span>
+            </div>
 
           <div class="card-body">
             <!-- Patient Details Form -->
@@ -146,9 +154,7 @@
                 <button
                   class="btn btn-primary"
                   @click="startTranscription"
-                  :disabled="
-                    (useLocalModel && !modelReady) || isTranscribing || !audioFile || !patientName
-                  "
+                  :disabled="isTranscribing || !audioFile || !patientName"
                 >
                   <span v-if="isTranscribing" class="spinner-border spinner-border-sm me-2"></span>
                   <i v-else class="bi bi-play-fill me-2"></i>
@@ -301,7 +307,6 @@ const route = useRoute()
 
 const {
   isLoading,
-  isReady: modelReady,
   downloadProgress,
   error,
   useLocalModel,
@@ -495,12 +500,6 @@ function saveChatToLocalStorage(chatData: any) {
 
 async function startTranscription() {
   if (!audioFile.value || !patientName.value) return
-
-  // Check if WebGPU model is needed but not ready
-  if (useLocalModel && !webGpuModelReady.value) {
-    alert('Please load the WebGPU model first.')
-    return
-  }
 
   isTranscribing.value = true
   transcriptionStatus.value = 'Processing audio...'

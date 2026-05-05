@@ -1,8 +1,8 @@
 <template>
   <div class="survey-qr-code text-center p-4 border rounded bg-white shadow-sm">
-    <h5 class="mb-3 fw-bold">Průzkum pro pacienta</h5>
+    <h5 class="mb-3 fw-bold">Obecná zpětná vazba</h5>
     <p class="text-muted small mb-4">
-      Nechte pacienta naskenovat tento kód k vyplnění zpětné vazby.
+      Požádejte pacienta o vyplnění obecné zpětné vazby k sezení.
     </p>
 
     <div class="qr-container d-flex justify-content-center mb-4 p-3 bg-light rounded">
@@ -32,12 +32,19 @@ import QrcodeVue from 'qrcode.vue'
 
 const props = defineProps<{
   sessionId: string
+  patientName?: string
 }>()
 
 const copied = ref(false)
 
 const surveyUrl = computed(() => {
-  return `${window.location.origin}/#/doctor/feedback?token=${props.sessionId}`
+  const baseUrl = `${window.location.origin}/#/patients/survey/general`
+  const params = new URLSearchParams()
+  if (props.sessionId) params.set('sessionId', props.sessionId)
+  if (props.patientName) params.set('name', props.patientName)
+  
+  const query = params.toString()
+  return query ? `${baseUrl}?${query}` : baseUrl
 })
 
 function copyUrl() {
