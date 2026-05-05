@@ -121,8 +121,8 @@
             <button
               v-if="!ttsReady"
               class="btn btn-sm btn-warning"
-              @click="loadTtsModel"
-              :disabled="ttsLoading"
+              @click="init(selectedVoice)"
+              :disabled="ttsLoading || !selectedVoice"
             >
               <span v-if="ttsLoading" class="spinner-border spinner-border-sm me-2"></span>
               <i v-else class="bi bi-volume-up me-2"></i>
@@ -224,7 +224,7 @@
                 <button
                   v-if="isSpeaking"
                   class="btn btn-sm btn-outline-danger"
-                  @click="stopSpeaking"
+                  @click="stop"
                   title="Zastavit přehrávání"
                 >
                   <i class="bi bi-stop-fill"></i>
@@ -395,7 +395,7 @@ const refiningSection = ref('')
 const isRefining = ref(false)
 
 // TTS state
-const { isLoading: ttsLoading, isReady: ttsReady, isSpeaking, loadModel: loadTtsModel, speak: speakText, stop: stopSpeaking, downloadProgress: ttsProgress } = useTextToSpeech()
+const { isLoading: ttsLoading, isReady: ttsReady, isSpeaking, progress: ttsProgress, error: ttsError, init, speak, stop } = useTextToSpeech()
 const selectedVoice = ref('')
 const worksheetRef = ref<HTMLElement | null>(null)
 
@@ -771,7 +771,16 @@ async function speakReport() {
   const text = translatedReport.value || reportContent.value
   if (!text) return
 
-  await speakText(text, selectedVoice.value)
+  // Initialize model if not already ready
+  if (!ttsReady.value) {
+    const initialized = await init(selectedVoice.value)
+    if (!initialized) {
+      alert('Failed to initialize TTS model')
+      return
+    }
+  }
+
+  await speak(text)
 }
 
 function showPrintModal() {
