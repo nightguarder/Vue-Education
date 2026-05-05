@@ -49,6 +49,11 @@ const router = createRouter({
       component: () => import('../views/patient/PatientFeedback.vue'),
     },
     {
+      path: '/patients/survey/personalized',
+      name: 'patient-personalized-survey',
+      component: () => import('../views/patient/PersonalizedSurvey.vue'),
+    },
+    {
       path: '/doctor/feedback',
       name: 'doctor-feedback',
       component: () => import('../views/PatientFeedback.vue'),
