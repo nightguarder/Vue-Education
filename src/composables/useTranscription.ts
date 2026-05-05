@@ -233,7 +233,12 @@ export function useTranscription() {
   }
 
   async function transcribeAudio(audioFile: File, onProgress?: (status: string) => void): Promise<string> {
-    if (!isReady.value && useLocalModel.value) throw new Error('Model not loaded')
+    // Always allow OMLX - only check model readiness for WebGPU when explicitly enabled
+    // OMLX is always available as fallback
+    if (useLocalModel.value && !encoderSession) {
+      // User wants WebGPU but model not loaded - try to load or fallback to OMLX
+      console.log('[Transcription] WebGPU requested but not ready, using OMLX fallback')
+    }
 
     const duration = await getAudioDuration(audioFile)
 
