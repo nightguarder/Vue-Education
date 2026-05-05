@@ -30,12 +30,18 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  server: {
+server: {
     proxy: {
       '/omlx': {
-        target: `http://127.0.0.1:${process.env.VITE_OMLX_PORT || '8080'}`,
+        target: `http://127.0.0.1:${process.env.VITE_OMLX_PORT || '8888'}`,
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/omlx/, '/v1'),
+        rewrite: (path) => {
+          // Don't rewrite audio endpoints
+          if (path.includes('/audio/')) {
+            return path.replace(/^\/omlx/, '')
+          }
+          return path.replace(/^\/omlx/, '/v1')
+        },
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
             console.log('[OMLX Proxy Error]', err.message)

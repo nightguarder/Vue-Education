@@ -26,8 +26,8 @@ export async function searchWeb(query: string, maxResults: number = 5): Promise<
         search_depth: 'basic',
         max_results: maxResults,
         include_answer: true,
-        include_raw_content: false
-      })
+        include_raw_content: false,
+      }),
     })
 
     if (!response.ok) {
