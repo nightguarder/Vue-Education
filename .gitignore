@@ -51,3 +51,5 @@ Instructions.md
 
 # Backend / Database
 backend/
+.backend/
+.env.production
