@@ -1,0 +1,25 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Pass Authorization Header to PHP
+  # InfinityFree and some other hosts strip this header by default
+  RewriteCond %{HTTP:Authorization} ^(.*)
+  RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+  # Force HTTPS
+  RewriteCond %{HTTP:X-Forwarded-Proto} =http
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # API Rewrite: Route /api requests to the backend entry point
+  # This ensures frontend calls to /api/* reach api/index.php
+  RewriteRule ^api/(.*)$ api/index.php [L,QSA]
+
+  # If the request is for a real file or directory, serve it
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Otherwise, send everything else to index.html for Vue Router
+  RewriteRule ^ index.html [L]
+</IfModule>
