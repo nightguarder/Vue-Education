@@ -110,17 +110,28 @@ ${sources}
 Téma: ${topic}
 `
 
-export function getRefineSectionPrompt(
-  section: string,
-  currentContent: string,
-  instruction: string,
-): string {
-  return `Uprav následující sekci podle instrukcí.
-Sekce: ${section}
-Aktuální obsah:
-${currentContent}
+export function getMedicationTrackerPrompt(context: ChatContext): string {
+  return `Na základě klinického kontextu pacienta ${context.patientName} vytvoř personalizovaný pracovní list pro sledování nežádoucích účinků léků.
 
-Instrukce: ${instruction}
+KLINICKÝ KONTEXT:
+${context.aiSummary || context.transcript || 'Není k dispozici'}
 
-Vrať pouze upravený obsah bez úvodního nebo závěrečného textu.`
+ÚKOL:
+1. Identifikuj léky, které pacient užívá nebo mu byly nově předepsány.
+2. Pro každý lék uveď 3-4 nejčastější nebo relevantní nežádoucí účinky, které má pacient sledovat.
+3. Vytvoř strukturovaný seznam v češtině.
+
+FORMÁT (vrať POUZE JSON):
+{
+  "title": "Sledování nežádoucích účinků: [Jména léků]",
+  "intro": "Tento pracovní list vám pomůže sledovat, jak vaše tělo reaguje na novou léčbu...",
+  "medications": [
+    {
+      "name": "Název léku",
+      "side_effects": [
+        {"id": "se1", "label": "Název účinku (např. Sucho v ústech)", "type": "slider"}
+      ]
+    }
+  ]
+}`
 }

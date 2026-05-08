@@ -157,44 +157,52 @@
           <div class="modal-body">
             <form @submit.prevent="submitWorksheet">
               <div v-for="field in activeWorksheet.fields" :key="field.id" class="mb-3">
-                <label :for="field.id" class="form-label">{{ field.label }}</label>
-
-                <template v-if="field.type === 'textarea'">
-                  <textarea
-                    :id="field.id"
-                    v-model="responses[field.id]"
-                    class="form-control"
-                    :placeholder="field.placeholder"
-                    rows="3"
-                  ></textarea>
-                </template>
-
-                <template v-else-if="field.type === 'slider'">
-                  <input
-                    :id="field.id"
-                    v-model.number="responses[field.id]"
-                    type="range"
-                    :min="field.min"
-                    :max="field.max"
-                    class="form-range"
-                  />
-                  <div class="text-muted small mt-1">
-                    Value: {{ responses[field.id] || field.value || 0 }}
+                <template v-if="field.type === 'header'">
+                  <div class="mt-4 mb-2 border-bottom pb-1">
+                    <h6 class="fw-bold text-primary mb-0">{{ field.label }}</h6>
                   </div>
                 </template>
 
-                <template v-else-if="field.type === 'checkbox'">
-                  <div class="form-check">
-                    <input
+                <template v-else>
+                  <label :for="field.id" class="form-label">{{ field.label }}</label>
+                  
+                  <template v-if="field.type === 'textarea'">
+                    <textarea
                       :id="field.id"
                       v-model="responses[field.id]"
-                      type="checkbox"
-                      class="form-check-input"
+                      class="form-control"
+                      :placeholder="field.placeholder"
+                      rows="3"
+                    ></textarea>
+                  </template>
+
+                  <template v-else-if="field.type === 'slider'">
+                    <input
+                      :id="field.id"
+                      v-model.number="responses[field.id]"
+                      type="range"
+                      :min="field.min"
+                      :max="field.max"
+                      class="form-range"
                     />
-                    <label :for="field.id" class="form-check-label">
-                      {{ field.label }}
-                    </label>
-                  </div>
+                    <div class="text-muted small mt-1">
+                      Hodnota: {{ responses[field.id] || field.value || 0 }}
+                    </div>
+                  </template>
+
+                  <template v-else-if="field.type === 'checkbox'">
+                    <div class="form-check">
+                      <input
+                        :id="field.id"
+                        v-model="responses[field.id]"
+                        type="checkbox"
+                        class="form-check-input"
+                      />
+                      <label :for="field.id" class="form-check-label">
+                        {{ field.label }}
+                      </label>
+                    </div>
+                  </template>
                 </template>
               </div>
 
@@ -220,9 +228,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { Worksheet } from '@/services/patientApi'
+import { useRoute } from 'vue-router'
+import { patientApi, type Worksheet } from '@/services/patientApi'
 
-// Patient ID and mode
+const route = useRoute()
 const patientId = ref<string>('')
 const isGuestMode = ref(true)
 const activeWorksheet = ref<Worksheet | null>(null)
@@ -233,67 +242,9 @@ const worksheets = ref<Worksheet[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Generic worksheets (guest mode) - to be fetched from GitHub later
-const genericWorksheets: Worksheet[] = [
-  {
-    id: 1,
-    title: 'KBT záznam myšlenek',
-    type: 'cbt_record',
-    intro: 'Sledujte své myšlenky a pocity.',
-    fields: [
-      {
-        id: 'q1',
-        type: 'textarea',
-        label: 'Co se stalo? (Spoušť)',
-        placeholder: 'Popište situaci...',
-      },
-      { id: 'q2', type: 'slider', min: 0, max: 10, label: 'Úroveň úzkosti (0-10)', value: 5 },
-      { id: 'q3', type: 'textarea', label: 'Automatická myšlenka', placeholder: 'Co vás napadlo?' },
-      {
-        id: 'q4',
-        type: 'textarea',
-        label: 'Alternativní myšlenka',
-        placeholder: 'Vyváženější myšlenka...',
-      },
-    ],
-    assignedAt: '', // Will be set in onMounted
-  },
-  {
-    id: 2,
-    title: 'Deník nálad',
-    type: 'mood_diary',
-    fields: [
-      {
-        id: 'mood',
-        type: 'slider',
-        min: 1,
-        max: 10,
-        label: 'Celková nálada (1=nejhorší, 10=nejlepší)',
-        value: 5,
-      },
-      { id: 'sleep', type: 'slider', min: 1, max: 10, label: 'Kvalita spánku', value: 5 },
-      { id: 'notes', type: 'textarea', label: 'Poznámky pro dnešek' },
-    ],
-    assignedAt: '', // Will be set in onMounted
-  },
-]
-
 onMounted(() => {
-  // Set assignedAt dates after component mount
-  if (genericWorksheets[0]) {
-    genericWorksheets[0].assignedAt = new Date().toISOString()
-  }
-  if (genericWorksheets[1]) {
-    genericWorksheets[1].assignedAt = new Date(Date.now() - 86400000).toISOString()
-  }
-
   // Check URL query for patient ID
-  const urlParams = new URLSearchParams(window.location.search)
-  const urlPatientId = urlParams.get('id')
-  if (urlPatientId) {
-    patientId.value = urlPatientId
-  }
-
+  patientId.value = (route.query.patientId as string) || (route.query.id as string) || ''
   loadWorksheets()
 })
 
@@ -302,13 +253,12 @@ async function loadWorksheets() {
   error.value = null
 
   try {
-    // Fetch templates from database (public only for guest mode)
-    const templatesRes = await fetch('/api/templates?public=1')
-    const templates = await templatesRes.json()
-
     if (!patientId.value.trim()) {
-      // Guest mode - use database templates as generic worksheets
+      // Guest mode - fetch templates
       isGuestMode.value = true
+      const templatesRes = await fetch('/api/templates?public=1')
+      const templates = await templatesRes.json()
+      
       worksheets.value = templates.map((t: any) => ({
         id: t.template_id,
         title: t.title,
@@ -321,47 +271,32 @@ async function loadWorksheets() {
     }
 
     isGuestMode.value = false
+    const data = await patientApi.getPatientData(patientId.value)
+    
+    worksheets.value = data.worksheets.map((pw: any) => {
+      // If it's a dynamic worksheet, use custom_questions as fields
+      const fields = pw.template_id === 'dynamic' 
+        ? (typeof pw.custom_questions === 'string' ? JSON.parse(pw.custom_questions) : pw.custom_questions)
+        : (typeof pw.fields === 'string' ? JSON.parse(pw.fields) : pw.fields)
 
-    // Fetch patient-specific worksheets from API
-    const response = await fetch(
-      `/api/worksheets?patient_id=${encodeURIComponent(patientId.value)}`,
-    )
-
-    if (response.ok) {
-      const patientWorksheets = await response.json()
-
-      if (patientWorksheets.length > 0) {
-        worksheets.value = patientWorksheets.map((pw: any) => ({
-          id: pw.template_id,
-          title: pw.title,
-          type: pw.type,
-          fields: typeof pw.fields === 'string' ? JSON.parse(pw.fields) : pw.fields,
-          status: pw.status,
-          assignedAt: pw.assigned_at,
-        }))
-      } else {
-        // Fall back to templates if no personalized worksheets
-        worksheets.value = templates.map((t: any) => ({
-          id: t.template_id,
-          title: t.title,
-          type: t.type,
-          fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
-          status: 'available' as const,
-          assignedAt: new Date().toISOString(),
-        }))
+      // If custom_questions is a full worksheet object (title, intro, fields)
+      const isFullCustom = fields && fields.fields && fields.title
+      
+      return {
+        id: pw.id, // Database primary key
+        template_id: pw.template_id,
+        title: isFullCustom ? fields.title : (pw.title || 'Personalizovaný pracovní list'),
+        type: pw.type || 'dynamic',
+        intro: isFullCustom ? fields.intro : (pw.intro || ''),
+        fields: isFullCustom ? fields.fields : fields,
+        status: pw.status,
+        assignedAt: pw.assigned_at,
+        completed: pw.status === 'completed'
       }
-    } else {
-      // Fall back to templates
-      worksheets.value = templates.map((t: any) => ({
-        id: t.template_id,
-        title: t.title,
-        type: t.type,
-        fields: typeof t.fields === 'string' ? JSON.parse(t.fields) : t.fields,
-        status: 'available' as const,
-        assignedAt: new Date().toISOString(),
-      }))
-    }
+    })
+
   } catch (err: any) {
+    console.error('[PatientWorksheets] Load error:', err)
     error.value = `Nepodařilo se načíst pracovní listy: ${err.message}`
     worksheets.value = []
   } finally {
@@ -445,46 +380,23 @@ async function submitWorksheet() {
 
   const worksheet = activeWorksheet.value
   const responseData = { ...responses.value }
-  const now = new Date().toISOString()
 
-  // Mark as completed
-  worksheet.completed = true
-  worksheet.responseData = responseData
-  worksheet['submittedAt'] = now // Use bracket notation to avoid TS error
-
-  // TODO (MySQL): Replace with API call to education-patients database
-  // await fetch(`/api/education-patients/worksheets/${patientId.value}/submit`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     worksheetId: worksheet.id,
-  //     responses: responseData
-  //   })
-  // });
-
-  // Store response in localStorage for now
-  if (patientId.value) {
-    const responseKey = `patient_responses_${patientId.value}`
-    const existing = localStorage.getItem(responseKey)
-    const responsesList = existing ? JSON.parse(existing) : []
-    responsesList.push({
-      worksheetId: worksheet.id,
-      worksheetTitle: worksheet.title,
-      responses: responseData,
-      submittedAt: now,
+  try {
+    loading.value = true
+    await patientApi.submitWorksheet({
+      patient_id: patientId.value,
+      worksheet_id: worksheet.id as number,
+      responses: responseData
     })
-    localStorage.setItem(responseKey, JSON.stringify(responsesList))
+    
+    alert('Pracovní list byl úspěšně odeslán!')
+    activeWorksheet.value = null
+    await loadWorksheets() // Reload to show completed status
+  } catch (e: any) {
+    alert('Chyba při odesílání: ' + e.message)
+  } finally {
+    loading.value = false
   }
-
-  // Update worksheet in list
-  const index = worksheets.value.findIndex((w) => w.id === worksheet.id)
-  if (index !== -1) {
-    worksheets.value[index] = { ...worksheet }
-  }
-
-  activeWorksheet.value = null
-
-  alert('Worksheet submitted successfully!')
 }
 
 function clearId() {

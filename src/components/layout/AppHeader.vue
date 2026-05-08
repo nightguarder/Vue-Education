@@ -1,6 +1,7 @@
 <template>
   <BNavbar toggleable="lg" type="light" class="site-header" container="lg">
     <BNavbarBrand>
+      <img src="/public/icons/icon-logo-transparent.png" alt="Logo" class="logo" style="width: 50px; height: 50px;" />
       <RouterLink to="/" class="navbar-brand">Vzdělávací platforma</RouterLink>
     </BNavbarBrand>
 

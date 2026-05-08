@@ -12,10 +12,24 @@
               <div class="d-flex gap-1">
                 <button
                   class="btn btn-link text-primary p-0"
+                  @click="createNewSession"
+                  title="Nové sezení"
+                >
+                  <i class="bi bi-plus-circle-fill h5 mb-0"></i>
+                </button>
+                <button
+                  class="btn btn-link text-primary p-0"
                   @click="showChatList = false"
                   title="Collapse"
                 >
                   <i class="bi bi-layout-sidebar-inset h6"></i>
+                </button>
+                <button
+                  class="btn btn-link text-success p-0"
+                  @click="downloadAllBackups"
+                  title="Download all backups"
+                >
+                  <i class="bi bi-download h6"></i>
                 </button>
                 <button
                   class="btn btn-link text-danger p-0"
@@ -256,6 +270,17 @@
                       <p class="mb-0 text-dark-50" style="line-height: 1.6; white-space: pre-wrap">
                         {{ currentChat.aiSummary }}
                       </p>
+                      <div class="mt-3 pt-3 border-top">
+                        <button
+                          class="btn btn-sm btn-outline-success rounded-pill w-100"
+                          @click="generateWorksheet"
+                          :disabled="isGeneratingWorksheet"
+                        >
+                          <span v-if="isGeneratingWorksheet" class="spinner-border spinner-border-sm me-1"></span>
+                          <i v-else class="bi bi-file-earmark-medical me-1"></i>
+                          Generovat pracovní list (Léky)
+                        </button>
+                      </div>
                     </div>
                     <div v-else class="text-center py-5 text-muted">
                       <i class="bi bi-stars display-6 mb-2 opacity-25"></i>
@@ -325,7 +350,13 @@
           <button type="button" class="btn-close" @click="showQrModal = false"></button>
         </div>
         <div class="modal-body">
-          <SurveyQRCode :sessionId="currentChat?.chatId || ''" :patientName="currentChat?.patientName" />
+          <SurveyQRCode 
+            :sessionId="currentChat?.chatId || ''" 
+            :patientId="currentChat?.patientId"
+            :patientName="currentChat?.patientName" 
+            :doctorId="'DOC-default'"
+            :clinicId="'CLI-default'"
+          />
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showQrModal = false">
@@ -341,10 +372,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getSummaryAnalysisPrompt, getChatSystemMessage } from '@/services/aiPrompts'
+import { getSummaryAnalysisPrompt, getChatSystemMessage, getMedicationTrackerPrompt } from '@/services/aiPrompts'
+import { doctorApi, type ClinicalSession } from '@/services/doctorApi'
 import SurveyQRCode from '@/components/SurveyQRCode.vue'
-
-const CHAT_STORAGE_KEY = 'doctor_chats'
 
 const route = useRoute()
 const router = useRouter()
@@ -357,7 +387,7 @@ interface ChatMessage {
 
 interface Chat {
   chatId: string
-  patientId?: string
+  patientId: string
   patientName: string
   patientAge?: number
   patientGender?: string
@@ -375,6 +405,8 @@ const newMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
 const isSending = ref(false)
 const isAnalyzing = ref(false)
+const isGeneratingWorksheet = ref(false)
+const isLoading = ref(false)
 const activeContextTab = ref<'summary' | 'transcript'>('summary')
 const showChatList = ref(true)
 const showQrModal = ref(false)
@@ -385,21 +417,57 @@ const currentChat = computed(() => {
   return chats.value.find((c) => c.chatId === currentChatId.value) || null
 })
 
-function loadChats() {
+async function loadChats() {
+  isLoading.value = true
   try {
-    const stored = localStorage.getItem(CHAT_STORAGE_KEY)
-    chats.value = stored ? JSON.parse(stored) : []
+    const sessions = await doctorApi.getSessions()
+    chats.value = sessions.map(s => {
+      const analysis = typeof s.ai_analysis === 'string' ? JSON.parse(s.ai_analysis) : s.ai_analysis
+      return {
+        chatId: s.session_id,
+        patientId: s.patient_id,
+        patientName: analysis?.patientName || 'Neznámý pacient',
+        patientAge: analysis?.patientAge,
+        patientGender: analysis?.patientGender,
+        patientNotes: analysis?.patientNotes,
+        createdAt: s.created_at || new Date().toISOString(),
+        lastActivity: analysis?.lastActivity || s.created_at,
+        transcript: s.transcript,
+        aiSummary: analysis?.aiSummary,
+        messages: analysis?.messages || []
+      }
+    })
   } catch (e) {
-    console.error('[Chat] Failed to load:', e)
-    chats.value = []
+    console.error('[Chat] Failed to load from API, falling back to localStorage:', e)
+    const stored = localStorage.getItem('doctor_chats')
+    chats.value = stored ? JSON.parse(stored) : []
+  } finally {
+    isLoading.value = false
   }
 }
 
-function saveChats() {
+async function saveChat(chat: Chat) {
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chats.value))
+    const session: ClinicalSession = {
+      session_id: chat.chatId,
+      patient_id: chat.patientId,
+      doctor_id: 'DOC-default',
+      clinic_id: 'CLI-default',
+      transcript: chat.transcript,
+      ai_analysis: {
+        patientName: chat.patientName,
+        patientAge: chat.patientAge,
+        patientGender: chat.patientGender,
+        patientNotes: chat.patientNotes,
+        aiSummary: chat.aiSummary,
+        lastActivity: chat.lastActivity,
+        messages: chat.messages
+      }
+    }
+    await doctorApi.saveSession(session)
   } catch (e) {
-    console.error('[Chat] Failed to save:', e)
+    console.error('[Chat] API save failed, saving to localStorage:', e)
+    localStorage.setItem('doctor_chats', JSON.stringify(chats.value))
   }
 }
 
@@ -409,13 +477,35 @@ function selectChat(chatId: string) {
   nextTick(scrollToBottom)
 }
 
+function createNewSession() {
+  const name = prompt('Zadejte jméno pacienta:')
+  if (!name) return
+
+  const newPatientId = `PAT-${Math.random().toString(36).substring(2, 7)}`
+  const newChatId = `SES-${Math.random().toString(36).substring(2, 7)}`
+  const now = new Date().toISOString()
+
+  const newChat: Chat = {
+    chatId: newChatId,
+    patientId: newPatientId,
+    patientName: name,
+    createdAt: now,
+    lastActivity: now,
+    messages: []
+  }
+
+  chats.value.unshift(newChat)
+  selectChat(newChatId)
+  saveChat(newChat)
+}
+
 function scrollToBottom() {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
 }
 
-function sendMessage() {
+async function sendMessage() {
   if (!newMessage.value.trim() || !currentChat.value) return
 
   const msg: ChatMessage = {
@@ -426,10 +516,96 @@ function sendMessage() {
 
   currentChat.value.messages.push(msg)
   currentChat.value.lastActivity = new Date().toISOString()
+  const content = newMessage.value.trim()
   newMessage.value = ''
 
-  saveChats()
+  await saveChat(currentChat.value)
   nextTick(scrollToBottom)
+}
+
+async function generateWorksheet() {
+  if (!currentChat.value || isGeneratingWorksheet.value) return
+
+  isGeneratingWorksheet.value = true
+
+  try {
+    const prompt = getMedicationTrackerPrompt({
+      patientName: currentChat.value.patientName,
+      aiSummary: currentChat.value.aiSummary,
+      transcript: currentChat.value.transcript
+    })
+
+    const response = await fetch('/omlx/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_OMLX_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gemma-4-e4b-it-OptiQ-4bit',
+        messages: [
+          {
+            role: 'system',
+            content: 'Jsi zkušený klinický asistent. Vracíš POUZE validní JSON.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 1500,
+        temperature: 0.3,
+      }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      const contentStr = data.choices?.[0]?.message?.content || ''
+      
+      // Try to parse the JSON from AI
+      let worksheetContent
+      try {
+        // Clean markdown code blocks if AI added them
+        const jsonMatch = contentStr.match(/\{[\s\S]*\}/)
+        const cleanJson = jsonMatch ? jsonMatch[0] : contentStr
+        worksheetContent = JSON.parse(cleanJson)
+      } catch (e) {
+        console.error('Failed to parse AI worksheet JSON:', e)
+        throw new Error('AI vygenerovalo neplatný formát pracovního listu.')
+      }
+
+      // Convert the medication side effects into the format expected by PatientWorksheets.vue
+      const fields = []
+      if (worksheetContent.medications) {
+        worksheetContent.medications.forEach((med: any) => {
+          fields.push({ id: `header_${med.name}`, type: 'header', label: `Lék: ${med.name}` })
+          med.side_effects.forEach((se: any) => {
+            fields.push({
+              id: se.id,
+              type: se.type || 'slider',
+              label: se.label,
+              min: 0,
+              max: 10
+            })
+          })
+        })
+      }
+
+      await doctorApi.createWorksheet({
+        patient_id: currentChat.value.patientId,
+        session_id: currentChat.value.chatId,
+        content: {
+          title: worksheetContent.title || 'Sledování nežádoucích účinků',
+          intro: worksheetContent.intro || 'Prosím vyplňte tento pracovní list.',
+          fields: fields
+        }
+      })
+
+      alert('Pracovní list byl úspěšně vygenerován a odeslán pacientovi.')
+    }
+  } catch (e: any) {
+    console.error('[Chat] Worksheet generation failed:', e)
+    alert('Generování pracovního listu selhalo: ' + e.message)
+  } finally {
+    isGeneratingWorksheet.value = false
+  }
 }
 
 async function generateSummary() {
@@ -468,7 +644,7 @@ async function generateSummary() {
       const summary = data.choices?.[0]?.message?.content || 'Shrnutí se nepodařilo vygenerovat.'
 
       currentChat.value.aiSummary = summary
-      saveChats()
+      await saveChat(currentChat.value)
     }
   } catch (e) {
     console.error('[Chat] Summary generation failed:', e)
@@ -553,7 +729,7 @@ async function sendToOmlx() {
       }
       currentChat.value.messages.push(aiMsg)
       currentChat.value.lastActivity = new Date().toISOString()
-      saveChats()
+      await saveChat(currentChat.value)
     }
   } catch (e) {
     console.error('[Chat] AI asistence selhala:', e)
@@ -566,11 +742,28 @@ async function sendToOmlx() {
 }
 
 function clearAllChats() {
-  if (!confirm('Smazat všechny chaty? Tuto akci nelze vrátit.')) return
+  if (!confirm('Smazat všechny lokální chaty? Pozor: Chaty v databázi zůstanou zachovány.')) return
   chats.value = []
   currentChatId.value = null
-  saveChats()
+  localStorage.removeItem('doctor_chats')
   router.replace('/doctor/chat')
+}
+
+function downloadAllBackups() {
+  if (chats.value.length === 0) return
+  const backup = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    sessions: chats.value
+  }
+  const content = JSON.stringify(backup, null, 2)
+  const blob = new Blob([content], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `Clinical_Sessions_Backup_${new Date().toISOString().split('T')[0]}.json`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function downloadChat() {
