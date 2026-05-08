@@ -135,3 +135,19 @@ FORMÁT (vrať POUZE JSON):
   ]
 }`
 }
+
+export function getRefineSectionPrompt(section: string, currentContent: string, instruction: string): string {
+  return `Vylepši a přeformátuj následující sekci výzkumné zprávy: "${section}".
+
+AKTUÁLNÍ OBSAH:
+${currentContent}
+
+POKYN PRO ÚPRAVU:
+${instruction}
+
+ÚKOL:
+- Přepiš text tak, aby byl odbornější a srozumitelnější.
+- Zachovej Markdown formátování.
+- Odpověz v češtině.
+- Vrať POUZE vylepšený text bez jakýchkoli úvodních řečí.`
+}

@@ -48,10 +48,10 @@
               <!-- Textarea -->
               <textarea
                 v-if="field.type === 'textarea'"
-                v-model="formData[field.id]"
+                v-model="(formData as any)[field.id]"
                 class="form-control"
                 rows="3"
-                :placeholder="field.placeholder"
+                :placeholder="(field as any).placeholder"
               ></textarea>
 
               <!-- Slider -->
@@ -59,15 +59,15 @@
                 <input
                   type="range"
                   class="form-range"
-                  :min="field.min"
-                  :max="field.max"
-                  v-model.number="formData[field.id]"
+                  :min="(field as any).min"
+                  :max="(field as any).max"
+                  v-model.number="(formData as any)[field.id]"
                   :id="field.id"
                 />
                 <div class="d-flex justify-content-between text-muted small mt-1">
-                  <span>{{ field.min }} (Úplný klid)</span>
-                  <span class="fw-bold text-primary">{{ formData[field.id] }}</span>
-                  <span>{{ field.max }} (Naprostá neschopnost)</span>
+                  <span>{{ (field as any).min }} (Úplný klid)</span>
+                  <span class="fw-bold text-primary">{{ (formData as any)[field.id] }}</span>
+                  <span>{{ (field as any).max }} (Naprostá neschopnost)</span>
                 </div>
               </div>
 
@@ -78,15 +78,15 @@
                   <input
                     class="form-check-input"
                     type="checkbox"
-                    v-model="formData[field.id]"
+                    v-model="(formData as any)[field.id]"
                     :id="field.id"
                   />
                   <label class="form-check-label" :for="field.id">
-                    {{ field.checkboxText || 'Ano' }}
+                    {{ (field as any).checkboxText || 'Ano' }}
                   </label>
                 </div>
-                <div v-if="field.description" class="form-text text-muted small mt-1">
-                  {{ field.description }}
+                <div v-if="(field as any).description" class="form-text text-muted small mt-1">
+                  {{ (field as any).description }}
                 </div>
               </div>
             </div>

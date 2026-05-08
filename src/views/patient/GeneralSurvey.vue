@@ -53,30 +53,30 @@
               <!-- Textarea -->
               <textarea
                 v-if="field.type === 'textarea'"
-                v-model="formData[field.id]"
+                v-model="(formData as any)[field.id]"
                 class="form-control"
-                :rows="field.rows || 3"
-                :placeholder="field.placeholder"
+                :rows="(field as any).rows || 3"
+                :placeholder="(field as any).placeholder"
               ></textarea>
 
               <!-- Rating Scale -->
               <div v-else-if="field.type === 'rating'" class="mt-2">
                 <div class="d-flex gap-2 justify-content-center">
                   <button
-                    v-for="n in field.max"
+                    v-for="n in (field as any).max"
                     :key="n"
                     class="btn btn-lg p-0 border-0 bg-transparent"
-                    @click="formData[field.id] = n"
+                    @click="(formData as any)[field.id] = n"
                   >
                     <i
                       class="bi"
-                      :class="n <= formData[field.id] ? 'bi-star-fill text-warning' : 'bi-star text-muted'"
+                      :class="n <= (formData as any)[field.id] ? 'bi-star-fill text-warning' : 'bi-star text-muted'"
                       style="font-size: 2rem"
                     ></i>
                   </button>
                 </div>
                 <div class="text-center text-muted small mt-1">
-                  {{ field.labels ? field.labels[formData[field.id]] : formData[field.id] + ' / ' + field.max }}
+                  {{ (field as any).labels ? (field as any).labels[(formData as any)[field.id]] : (formData as any)[field.id] + ' / ' + (field as any).max }}
                 </div>
               </div>
 
@@ -84,7 +84,7 @@
               <div v-else-if="field.type === 'yesno'" class="mt-2 d-flex gap-3">
                 <div class="form-check">
                   <input
-                    v-model="formData[field.id]"
+                    v-model="(formData as any)[field.id]"
                     :value="true"
                     class="form-check-input"
                     type="radio"
@@ -96,7 +96,7 @@
                 </div>
                 <div class="form-check">
                   <input
-                    v-model="formData[field.id]"
+                    v-model="(formData as any)[field.id]"
                     :value="false"
                     class="form-check-input"
                     type="radio"
@@ -114,11 +114,11 @@
                   <input
                     class="form-check-input"
                     type="checkbox"
-                    v-model="formData[field.id]"
+                    v-model="(formData as any)[field.id]"
                     :id="field.id"
                   />
                   <label class="form-check-label" :for="field.id">
-                    {{ field.checkboxText || 'Ano' }}
+                    {{ (field as any).checkboxText || 'Ano' }}
                   </label>
                 </div>
               </div>

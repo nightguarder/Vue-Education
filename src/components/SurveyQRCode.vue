@@ -44,7 +44,7 @@ const copied = ref(false)
 const toShortId = (id: string | undefined, prefix: string) => {
   if (!id) return `${prefix}-${Math.random().toString(36).substring(2, 7)}`
   const cleanId = id.includes('-') ? id.split('-')[0] : id
-  return `${prefix}-${cleanId.substring(0, 8)}`
+  return `${prefix}-${(cleanId || '').substring(0, 8)}`
 }
 
 const surveyUrl = computed(() => {

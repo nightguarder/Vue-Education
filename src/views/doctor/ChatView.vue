@@ -151,7 +151,7 @@
                       msg.role === 'user'
                         ? 'Lékař'
                         : msg.role === 'assistant'
-                          ? 'AI asistent'
+                          ? 'OMLX model'
                           : 'Systém'
                     }}</span>
                     <small class="ms-2 opacity-50">{{
@@ -159,13 +159,13 @@
                     }}</small>
                   </div>
                   <div class="message-bubble shadow-sm p-3">
-                    <div class="content" style="white-space: pre-wrap">{{ msg.content }}</div>
+                    <div class="content markdown-content" v-html="renderMarkdown(msg.content)"></div>
                   </div>
                 </div>
               </div>
 
               <!-- Streaming response -->
-              <div v-if="isSending && streamingContent" class="mb-4">
+              <div v-if="streamingContent" class="mb-4">
                 <div class="message-wrapper ai-msg">
                   <div class="message-meta mb-1 px-2">
                     <span class="fw-bold small">AI Assistant</span>
@@ -177,9 +177,8 @@
                     </span>
                   </div>
                   <div class="message-bubble shadow-sm p-3">
-                    <div class="content" style="white-space: pre-wrap">
-                      {{ streamingContent }}<span class="blinking-cursor">|</span>
-                    </div>
+                    <div class="content markdown-content d-inline" v-html="renderMarkdown(streamingContent)"></div>
+                    <span class="blinking-cursor text-primary ms-1">|</span>
                   </div>
                 </div>
               </div>
@@ -267,9 +266,7 @@
                   <!-- Summary Tab -->
                   <template v-if="activeContextTab === 'summary'">
                     <div v-if="currentChat.aiSummary">
-                      <p class="mb-0 text-dark-50" style="line-height: 1.6; white-space: pre-wrap">
-                        {{ currentChat.aiSummary }}
-                      </p>
+                      <div class="markdown-content text-dark-50" v-html="renderMarkdown(currentChat.aiSummary)"></div>
                       <div class="mt-3 pt-3 border-top">
                         <button
                           class="btn btn-sm btn-outline-success rounded-pill w-100"
@@ -302,9 +299,7 @@
                   <!-- Transcript Tab -->
                   <template v-else>
                     <div v-if="currentChat.transcript">
-                      <p class="mb-0 text-dark-50" style="line-height: 1.6">
-                        {{ currentChat.transcript }}
-                      </p>
+                      <div class="markdown-content text-dark-50" v-html="renderMarkdown(currentChat.transcript)"></div>
                     </div>
                     <div v-else class="text-center py-5 text-muted">
                       <i class="bi bi-mic-mute display-6 mb-2 opacity-25"></i>
@@ -375,9 +370,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { getSummaryAnalysisPrompt, getChatSystemMessage, getMedicationTrackerPrompt } from '@/services/aiPrompts'
 import { doctorApi, type ClinicalSession } from '@/services/doctorApi'
 import SurveyQRCode from '@/components/SurveyQRCode.vue'
+import { Marked } from 'marked'
 
 const route = useRoute()
 const router = useRouter()
+
+// Configure marked instance
+const marked = new Marked({
+  breaks: true,
+  gfm: true
+})
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -506,21 +508,34 @@ function scrollToBottom() {
 }
 
 async function sendMessage() {
-  if (!newMessage.value.trim() || !currentChat.value) return
+  if (!newMessage.value.trim() || !currentChat.value || isSending.value) return
 
+  const content = newMessage.value.trim()
   const msg: ChatMessage = {
     role: 'user',
-    content: newMessage.value.trim(),
+    content: content,
     timestamp: new Date().toISOString(),
   }
 
   currentChat.value.messages.push(msg)
   currentChat.value.lastActivity = new Date().toISOString()
-  const content = newMessage.value.trim()
   newMessage.value = ''
 
   await saveChat(currentChat.value)
   nextTick(scrollToBottom)
+
+  // Automatically trigger AI response
+  await sendToOmlx()
+}
+
+function renderMarkdown(text: string | null | undefined): string {
+  if (!text) return ''
+  try {
+    return marked.parse(text) as string
+  } catch (e) {
+    console.error('Markdown parsing error:', e)
+    return text
+  }
 }
 
 async function generateWorksheet() {
@@ -572,7 +587,7 @@ async function generateWorksheet() {
       }
 
       // Convert the medication side effects into the format expected by PatientWorksheets.vue
-      const fields = []
+      const fields: any[] = []
       if (worksheetContent.medications) {
         worksheetContent.medications.forEach((med: any) => {
           fields.push({ id: `header_${med.name}`, type: 'header', label: `Lék: ${med.name}` })
@@ -948,6 +963,104 @@ watch(
   .container-fluid {
     height: auto;
     overflow: visible;
+  }
+}
+
+.markdown-content {
+  :deep(p) {
+    margin-bottom: 0.75rem;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #1a202c;
+  }
+
+  :deep(h1) { font-size: 1.5rem; }
+  :deep(h2) { font-size: 1.25rem; }
+  :deep(h3) { font-size: 1.1rem; }
+  :deep(h4) { font-size: 1rem; }
+
+  :deep(ul), :deep(ol) {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+  }
+
+  :deep(li) {
+    margin-bottom: 0.25rem;
+  }
+
+  :deep(blockquote) {
+    border-left: 4px solid #cbd5e0;
+    padding: 0.5rem 0 0.5rem 1rem;
+    margin: 1rem 0;
+    color: #4a5568;
+    background-color: #f7fafc;
+    border-radius: 0 4px 4px 0;
+  }
+
+  :deep(table) {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  :deep(th), :deep(td) {
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem;
+    text-align: left;
+  }
+
+  :deep(th) {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  :deep(code) {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85em;
+    color: #c53030;
+  }
+
+  :deep(pre) {
+    background-color: #1a202c;
+    color: #f7fafc;
+    padding: 1rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    
+    code {
+      background-color: transparent;
+      padding: 0;
+      color: inherit;
+      font-size: 0.9em;
+    }
+  }
+
+  :deep(strong) {
+    font-weight: 700;
+    color: inherit;
+  }
+
+  :deep(hr) {
+    margin: 1.5rem 0;
+    border: 0;
+    border-top: 2px solid #e2e8f0;
   }
 }
 

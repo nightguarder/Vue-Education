@@ -157,7 +157,7 @@
           <div class="modal-body">
             <form @submit.prevent="submitWorksheet">
               <div v-for="field in activeWorksheet.fields" :key="field.id" class="mb-3">
-                <template v-if="field.type === 'header'">
+                <template v-if="(field.type as any) === 'header'">
                   <div class="mt-4 mb-2 border-bottom pb-1">
                     <h6 class="fw-bold text-primary mb-0">{{ field.label }}</h6>
                   </div>

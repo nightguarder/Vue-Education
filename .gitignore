@@ -53,3 +53,4 @@ Instructions.md
 backend/
 .backend/
 .env.production
+conductor/
