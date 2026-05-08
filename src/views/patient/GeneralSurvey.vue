@@ -182,6 +182,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { patientApi } from '@/services/patientApi'
 
 const survey = reactive({
   title: "Obecná zpětná vazba k sezení",
@@ -224,13 +225,19 @@ const survey = reactive({
 
 const patientId = ref('')
 const patientName = ref('Host')
+const doctorId = ref('')
+const clinicId = ref('')
+const sessionId = ref('')
 const submittedAt = ref('')
 const router = useRouter()
 const route = useRoute()
 
 onMounted(() => {
-  patientId.value = route.query.patientId as string || `PAT-${Math.floor(10000 + Math.random() * 90000)}`
-  patientName.value = route.query.name as string || 'Host'
+  patientId.value = (route.query.patientId as string) || ''
+  patientName.value = (route.query.name as string) || 'Host'
+  doctorId.value = (route.query.doctorId as string) || ''
+  clinicId.value = (route.query.clinicId as string) || ''
+  sessionId.value = (route.query.sessionId as string) || ''
   window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
@@ -263,23 +270,30 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 }
 
 const submitSurvey = async () => {
+  if (submitting.value) return
   submitting.value = true
   try {
-    const entry = {
+    const feedbackData = {
       patientId: patientId.value,
       patientName: patientName.value,
-      surveyTitle: survey.title,
+      doctorId: doctorId.value,
+      clinicId: clinicId.value,
+      sessionId: sessionId.value,
       type: 'general',
       responses: { ...formData },
       submittedAt: new Date().toISOString()
     }
-    const existing = JSON.parse(localStorage.getItem('generalSurveys') || '[]')
-    existing.push(entry)
-    localStorage.setItem('generalSurveys', JSON.stringify(existing))
-    
-    submittedAt.value = entry.submittedAt
+
+    await patientApi.submitFeedback(feedbackData)
+
+    submittedAt.value = feedbackData.submittedAt
     submitted.value = true
-    setTimeout(() => { submitted.value = false }, 3000)
+    setTimeout(() => {
+      submitted.value = false
+    }, 3000)
+  } catch (e) {
+    console.error('[GeneralSurvey] Submit failed:', e)
+    alert('Odeslání se nezdařilo. Zkuste to prosím později.')
   } finally {
     submitting.value = false
   }

@@ -32,15 +32,29 @@ import QrcodeVue from 'qrcode.vue'
 
 const props = defineProps<{
   sessionId: string
+  patientId?: string
   patientName?: string
+  doctorId?: string
+  clinicId?: string
 }>()
 
 const copied = ref(false)
 
+// Helper to ensure IDs are short (8 chars) if they look like UUIDs
+const toShortId = (id: string | undefined, prefix: string) => {
+  if (!id) return `${prefix}-${Math.random().toString(36).substring(2, 7)}`
+  const cleanId = id.includes('-') ? id.split('-')[0] : id
+  return `${prefix}-${cleanId.substring(0, 8)}`
+}
+
 const surveyUrl = computed(() => {
   const baseUrl = `${window.location.origin}/#/patients/survey/general`
   const params = new URLSearchParams()
-  if (props.sessionId) params.set('sessionId', props.sessionId)
+  
+  if (props.sessionId) params.set('sessionId', toShortId(props.sessionId, 'SES'))
+  if (props.patientId) params.set('patientId', toShortId(props.patientId, 'PAT'))
+  if (props.doctorId) params.set('doctorId', toShortId(props.doctorId, 'DOC'))
+  if (props.clinicId) params.set('clinicId', toShortId(props.clinicId, 'CLI'))
   if (props.patientName) params.set('name', props.patientName)
   
   const query = params.toString()

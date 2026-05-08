@@ -177,6 +177,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import QRCode from 'qrcode.vue'
+import { patientApi } from '@/services/patientApi'
 
 // Fake survey data (provided)
 const survey = reactive({
@@ -216,6 +217,9 @@ const survey = reactive({
 // Patient data
 const patientId = ref('')
 const patientName = ref('Jan Veselý')
+const doctorId = ref('')
+const clinicId = ref('')
+const sessionId = ref('')
 const router = useRouter()
 const route = useRoute()
 const surveyUrl = ref('')
@@ -223,13 +227,13 @@ const showQRModal = ref(false)
 
 // Generate random patient ID on mount
 onMounted(() => {
-  const urlPatientId = route.query.patientId as string
-  if (!urlPatientId) {
-    patientId.value = `PAT-${Math.floor(10000 + Math.random() * 90000)}`
-  } else {
-    patientId.value = urlPatientId
-  }
-  surveyUrl.value = `${window.location.origin}/#/patients/survey/personalized?patientId=${patientId.value}`
+  patientId.value = (route.query.patientId as string) || ''
+  patientName.value = (route.query.name as string) || 'Jan Veselý'
+  doctorId.value = (route.query.doctorId as string) || ''
+  clinicId.value = (route.query.clinicId as string) || ''
+  sessionId.value = (route.query.sessionId as string) || ''
+
+  surveyUrl.value = `${window.location.origin}/#/patients/survey/personalized?patientId=${patientId.value}&doctorId=${doctorId.value}&clinicId=${clinicId.value}&sessionId=${sessionId.value}`
   window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
@@ -258,22 +262,30 @@ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
 }
 
 const submitSurvey = async () => {
+  if (submitting.value) return
   submitting.value = true
   try {
-    // Fake save to localStorage
-    const entry = {
+    const surveyData = {
       patientId: patientId.value,
       patientName: patientName.value,
-      surveyTitle: survey.title,
+      doctorId: doctorId.value,
+      clinicId: clinicId.value,
+      sessionId: sessionId.value,
+      type: 'personalized',
+      aiContext: { intro: survey.intro }, // Example context
       responses: { ...formData },
       submittedAt: new Date().toISOString()
     }
-    const existing = JSON.parse(localStorage.getItem('personalizedSurveys') || '[]')
-    existing.push(entry)
-    localStorage.setItem('personalizedSurveys', JSON.stringify(existing))
-    
+
+    await patientApi.submitPersonalizedSurvey(surveyData)
+
     submitted.value = true
-    setTimeout(() => { submitted.value = false }, 3000)
+    setTimeout(() => {
+      submitted.value = false
+    }, 3000)
+  } catch (e) {
+    console.error('[PersonalizedSurvey] Submit failed:', e)
+    alert('Odeslání se nezdařilo. Zkuste to prosím později.')
   } finally {
     submitting.value = false
   }
