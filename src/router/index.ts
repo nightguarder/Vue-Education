@@ -71,12 +71,7 @@ const router = createRouter({
     // Doctor portal routes
     {
       path: '/doctor',
-      redirect: '/doctor/home',
-    },
-    {
-      path: '/doctor/home',
-      name: 'doctor-home',
-      component: () => import('../views/doctor/DoctorLanding.vue'),
+      redirect: '/doctor/chat',
     },
     {
       path: '/doctor/education',
@@ -101,6 +96,16 @@ const router = createRouter({
       path: '/doctor/chat/:chatId',
       name: 'doctor-chat-detail',
       component: () => import('../views/doctor/ChatView.vue'),
+    },
+    {
+      path: '/doctor/patients',
+      name: 'doctor-patients',
+      component: () => import('../views/doctor/PatientsView.vue'),
+    },
+    {
+      path: '/doctor/calendar',
+      name: 'doctor-calendar',
+      component: () => import('../views/doctor/CalendarView.vue'),
     },
     // Settings route
     {

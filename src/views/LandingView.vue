@@ -1,212 +1,255 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { doctorApi } from '@/services/doctorApi'
+import { useStressReliefAI } from '@/composables/useStressReliefAI'
+
+const { getRandomQuote, isDownloadAllowed, isDownloading, downloadProgress } = useStressReliefAI()
+
+const totalSessions = ref(0)
+const totalPatients = ref(0)
+const pendingWorksheets = ref(0)
+const totalWorksheets = ref(0)
+const isLoading = ref(true)
+
+const currentQuote = ref('')
+const isAiQuote = ref(false)
+const downloadAllowed = ref(true)
+
+onMounted(async () => {
+  // Stats Loading
+  try {
+    // In a real local-only app, we might fetch from localStorage
+    const sessions = await doctorApi.getSessions()
+    totalSessions.value = sessions.length
+
+    const uniquePatients = new Set(sessions.map(s => s.patient_id))
+    totalPatients.value = uniquePatients.size
+    
+    pendingWorksheets.value = sessions.filter(s => s.status === 'pending').length
+    
+    const surveys = await doctorApi.getSurveys()
+    totalWorksheets.value = surveys.length
+
+  } catch (e) {
+    console.error('Failed to load stats:', e)
+  } finally {
+    isLoading.value = false
+  }
+
+  // Quote Logic
+  currentQuote.value = getRandomQuote()
+  const today = new Date().toDateString()
+  const cachedQuote = localStorage.getItem('daily_quote')
+  const cachedDate = localStorage.getItem('daily_quote_date')
+  const cachedType = localStorage.getItem('daily_quote_type')
+
+  if (cachedDate === today && cachedQuote) {
+    currentQuote.value = cachedQuote
+    isAiQuote.value = cachedType === 'ai'
+  }
+  
+  downloadAllowed.value = isDownloadAllowed()
+})
+</script>
 
 <template>
-  <main class="education-page">
-    <!-- Hero Section -->
-    <section class="hero-section py-5">
-      <BContainer>
-        <BRow class="justify-content-center">
-          <BCol lg="8" class="text-center">
-            <h1 class="h1 mb-4">Vzdělávací platforma</h1>
-            <p class="lead text-muted mb-0">
-              Zdroje, materiály a nástroje pro vzdělávání v oblasti duševního zdraví.
-            </p>
-          </BCol>
-        </BRow>
-      </BContainer>
-    </section>
-
-    <!-- Portal Selection Section -->
-    <section class="portals-section py-5">
-      <BContainer>
-        <BRow class="g-4 justify-content-center">
-          <!-- Doctors Portal Card -->
-          <BCol md="6" lg="5">
-            <BCard
-              class="portal-card h-100 p-2 bg-white border-0 shadow-sm"
-              @click="$router.push('/doctor/home')"
-            >
-              <div class="d-flex align-items-start mb-3">
-                <div class="portal-icon-wrapper me-3">
-                  <i class="bi bi-clipboard2-pulse fs-2 text-primary"></i>
-                </div>
-                <div class="flex-grow-1">
-                  <h3 class="h4 mb-2">Portál pro lékaře</h3>
-                  <BBadge variant="light" class="text-dark border"> Vyžaduje přihlášení </BBadge>
-                </div>
-              </div>
-              <p class="text-muted mb-3">
-                Odborné materiály pro psychology, psychiatry a pediatry. Klinické případy, metodiky
-                a výzkumné studie.
-              </p>
-              <div class="feature-list mb-3">
-                <div class="feature-item">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  <small>Klinické případy a kazuistiky</small>
-                </div>
-                <div class="feature-item">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  <small>Metodické postupy</small>
-                </div>
-                <div class="feature-item">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  <small>Výzkumné studie a publikace</small>
-                </div>
-              </div>
-              <div class="d-flex align-items-center text-primary fw-bold">
-                <span>Přihlásit se</span>
-                <i class="bi bi-arrow-right ms-2"></i>
-              </div>
-            </BCard>
-          </BCol>
-
-          <!-- Patients Portal Card -->
-          <BCol md="6" lg="5">
-            <BCard
-              class="portal-card h-100 p-2 bg-white border-0 shadow-sm"
-              @click="$router.push('/patients/home')"
-            >
-              <div class="d-flex align-items-start mb-3">
-                <div class="portal-icon-wrapper me-3 icon-success">
-                  <i class="bi bi-heart-pulse fs-2 text-success"></i>
-                </div>
-                <div class="flex-grow-1">
-                  <h3 class="h4 mb-2">Portál pro pacienty</h3>
-                  <BBadge variant="success" class="bg-opacity-10 text-success">
-                    Volný přístup
-                  </BBadge>
-                </div>
-              </div>
-              <p class="text-muted mb-3">
-                Dostupné materiály pro pacienty a jejich rodiny. Články, videa, podcasty a
-                interaktivní cvičení.
-              </p>
-              <div class="feature-list mb-3">
-                <div class="feature-item">
-                  <i class="bi bi-check-circle-fill text-success me-2"></i>
-                  <small>Vzdělávací články</small>
-                </div>
-                <div class="feature-item">
-                  <i class="bi bi-check-circle-fill text-success me-2"></i>
-                  <small>Videa a podcasty</small>
-                </div>
-                <div class="feature-item">
-                  <i class="bi bi-check-circle-fill text-success me-2"></i>
-                  <small>Interaktivní cvičení</small>
-                </div>
-              </div>
-              <div class="d-flex align-items-center text-success fw-bold">
-                <span>Procházet obsah</span>
-                <i class="bi bi-arrow-right ms-2"></i>
-              </div>
-            </BCard>
-          </BCol>
-        </BRow>
-      </BContainer>
-    </section>
-
-    <!-- Info Section -->
-    <section class="info-section py-5">
-      <BContainer>
-        <BRow class="g-4">
-          <BCol md="4" class="text-center">
-            <div class="info-icon mb-3">
-              <i class="bi bi-mortarboard-fill fs-1 text-primary"></i>
-            </div>
-            <h4 class="h5 mb-2">Odborný obsah</h4>
-            <p class="text-muted small">
-              Materiály připravené zkušenými odborníky na duševní zdraví
-            </p>
-          </BCol>
-          <BCol md="4" class="text-center">
-            <div class="info-icon mb-3">
-              <i class="bi bi-globe fs-1 text-primary"></i>
-            </div>
-            <h4 class="h5 mb-2">Více jazyků</h4>
-            <p class="text-muted small">Obsah dostupný v češtině a angličtině</p>
-          </BCol>
-          <BCol md="4" class="text-center">
-            <div class="info-icon mb-3">
-              <i class="bi bi-phone fs-1 text-primary"></i>
-            </div>
-            <h4 class="h5 mb-2">Mobilní přístup</h4>
-            <p class="text-muted small">Přístup z počítače, tabletu nebo mobilního telefonu</p>
-          </BCol>
-        </BRow>
-      </BContainer>
-    </section>
-
-    <!-- Contact CTA -->
-    <section class="cta-section py-4">
-      <BContainer class="text-center">
-        <p class="mb-0 text-muted">
-          Máte dotazy?
-          <RouterLink to="/contact" class="text-primary">Kontaktujte nás</RouterLink> pro více
-          informací.
+  <div class="landing-page">
+    <section class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">Lékařský pracovní prostor</h1>
+        <p class="hero-subtitle text-muted lead">
+          Integrované nástroje pro moderní klinickou praxi a výzkum.
         </p>
-      </BContainer>
+      </div>
+
+      <!-- Daily Quote Card -->
+      <div class="container-fluid px-0 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden quote-card">
+          <div class="card-body p-4 text-center position-relative">
+            <h6 class="text-primary fw-bold text-uppercase mb-3">
+              <i class="bi bi-brightness-high me-2"></i>Myšlenka pro dnešní den
+            </h6>
+            <div class="quote-content position-relative" style="min-height: 60px; display: flex; align-items: center; justify-content: center">
+              <p class="fs-5 fst-italic text-dark mb-0 quote-text" :class="{ 'fade-in': isAiQuote }">
+                "{{ currentQuote }}"
+              </p>
+            </div>
+            <div class="mt-3 d-flex justify-content-center align-items-center">
+              <div v-if="isAiQuote" class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fade-in">
+                <i class="bi bi-stars me-1"></i> Local AI ready ✨
+              </div>
+              <div v-else-if="isDownloading" class="text-muted small">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Probouzím umělou inteligenci... {{ Math.round(downloadProgress) }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="container-fluid px-0 mb-5">
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden stats-card">
+          <div class="card-body p-3">
+            <div class="row text-center g-2">
+              <div class="col-6 col-md-3">
+                <h5 class="fw-bold text-primary mb-0">{{ isLoading ? '-' : totalSessions }}</h5>
+                <small class="text-muted extra-small">Klinických chatů</small>
+              </div>
+              <div class="col-6 col-md-3">
+                <h5 class="fw-bold text-success mb-0">{{ isLoading ? '-' : totalPatients }}</h5>
+                <small class="text-muted extra-small">Evidovaných pacientů</small>
+              </div>
+              <div class="col-6 col-md-3">
+                <h5 class="fw-bold text-warning mb-0">{{ isLoading ? '-' : pendingWorksheets }}</h5>
+                <small class="text-muted extra-small">Rozpracovaných listů</small>
+              </div>
+              <div class="col-6 col-md-3">
+                <h5 class="fw-bold text-info mb-0">{{ isLoading ? '-' : totalWorksheets }}</h5>
+                <small class="text-muted extra-small">Odeslaných materiálů</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Professional Tools Grid -->
+      <div class="container-fluid mt-2 px-0">
+        <h5 class="text-muted text-center mb-4 fw-bold ps-1">Pracovní nástroje</h5>
+        <div class="row g-3">
+          <!-- Tool 1: Chat -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <router-link to="/doctor/chat" class="nav-card-btn h-100 d-block text-decoration-none">
+              <i class="bi bi-chat-dots fs-3 text-primary mb-2"></i>
+              <span class="fw-bold d-block">Lékařský Chat</span>
+              <small class="text-muted">Klinický dialog a analýza sezení</small>
+            </router-link>
+          </div>
+          
+          <!-- Tool 2: Medical Researcher -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <router-link to="/doctor/research" class="nav-card-btn h-100 d-block text-decoration-none">
+              <i class="bi bi-robot fs-3 text-success mb-2"></i>
+              <span class="fw-bold d-block">Medical Researcher</span>
+              <small class="text-muted">PubMed syntéza a Deep Dive blogy</small>
+            </router-link>
+          </div>
+
+          <!-- Tool 3: Transcription -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <router-link to="/doctor/transcription" class="nav-card-btn h-100 d-block text-decoration-none">
+              <i class="bi bi-mic fs-3 text-danger mb-2"></i>
+              <span class="fw-bold d-block">Přepis konzultací</span>
+              <small class="text-muted">Převod audia na strukturovaný text</small>
+            </router-link>
+          </div>
+
+          <!-- Tool 4: Patient Management (Combined with Worksheets) -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <router-link to="/doctor/patients" class="nav-card-btn h-100 d-block text-decoration-none">
+              <i class="bi bi-person-lines-fill fs-3 text-info mb-2"></i>
+              <span class="fw-bold d-block">Správa pacientů</span>
+              <small class="text-muted">Evidence a pracovní listy</small>
+            </router-link>
+          </div>
+
+          <!-- Tool 5: Calendar -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <router-link to="/doctor/calendar" class="nav-card-btn h-100 d-block text-decoration-none">
+              <i class="bi bi-calendar-check fs-3 text-warning mb-2"></i>
+              <span class="fw-bold d-block">Kalendář</span>
+              <small class="text-muted">Plánování termínů a sezení</small>
+            </router-link>
+          </div>
+
+          <!-- Tool 6: Settings -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <router-link to="/settings" class="nav-card-btn h-100 d-block text-decoration-none">
+              <i class="bi bi-gear fs-3 text-secondary mb-2"></i>
+              <span class="fw-bold d-block">Nastavení</span>
+              <small class="text-muted">Konfigurace AI modelů a API</small>
+            </router-link>
+          </div>
+        </div>
+      </div>
     </section>
-  </main>
+  </div>
 </template>
 
 <style scoped lang="scss">
+.landing-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
 .hero-section {
-  background-color: #ffffff;
-}
-
-.portal-card {
-  transition: all 0.3s ease;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
-  }
-}
-
-.text-primary {
-  color: $primary-color !important;
-}
-
-.text-success {
-  color: $secondary-color !important;
-}
-
-.portal-icon-wrapper {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba($primary-color, 0.1);
-  border-radius: 12px;
-
-  &.icon-success {
-    background-color: rgba($secondary-color, 0.1);
-  }
-}
-
-.feature-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.feature-item {
-  display: flex;
   align-items: center;
 }
 
-.info-section {
-  background-color: #ffffff;
+.hero-content {
+  text-align: center;
+  margin-bottom: 3rem;
 }
 
-.info-icon {
-  color: $primary-color;
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
 }
 
-.cta-section {
-  background-color: #f8f9fa;
-  border-top: 1px solid #e2e8f0;
+.nav-card-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  color: #334155;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--bs-primary);
+    color: #0f172a;
+  }
+}
+
+.text-primary { color: #3b82f6 !important; }
+.text-success { color: #10b981 !important; }
+.text-danger { color: #ef4444 !important; }
+.text-warning { color: #f59e0b !important; }
+.text-info { color: #06b6d4 !important; }
+
+.quote-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0 !important;
+}
+
+.stats-card {
+  background: white;
+  border: 1px solid #f1f5f9 !important;
+}
+
+.extra-small {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.fade-in {
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .hero-title { font-size: 2rem; }
 }
 </style>

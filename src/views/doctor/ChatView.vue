@@ -567,12 +567,14 @@ async function generateWorksheet() {
         ],
         max_tokens: 1500,
         temperature: 0.3,
+        stop: ['<end_of_turn>'],
       }),
     })
 
     if (response.ok) {
       const data = await response.json()
-      const contentStr = data.choices?.[0]?.message?.content || ''
+      let contentStr = data.choices?.[0]?.message?.content || ''
+      contentStr = contentStr.split('<end_of_turn>')[0].trim()
       
       // Try to parse the JSON from AI
       let worksheetContent
@@ -651,12 +653,14 @@ async function generateSummary() {
         ],
         max_tokens: 1000,
         temperature: 0.3,
+        stop: ['<end_of_turn>'],
       }),
     })
 
     if (response.ok) {
       const data = await response.json()
-      const summary = data.choices?.[0]?.message?.content || 'Shrnutí se nepodařilo vygenerovat.'
+      const content = data.choices?.[0]?.message?.content || 'Shrnutí se nepodařilo vygenerovat.'
+      const summary = content.split('<end_of_turn>')[0].trim()
 
       currentChat.value.aiSummary = summary
       await saveChat(currentChat.value)
@@ -701,6 +705,7 @@ async function sendToOmlx() {
         max_tokens: 500,
         temperature: 0.7,
         stream: true,
+        stop: ['<end_of_turn>'],
       }),
     })
 

@@ -31,7 +31,7 @@
           </BDropdownItem>
         </BNavItemDropdown>
         <BNavItemDropdown text="Portál pro lékaře">
-          <BDropdownItem :to="'/doctor/home'"> <i class="bi bi-house me-2"></i>Domů </BDropdownItem>
+          <BDropdownItem :to="'/'"> <i class="bi bi-house me-2"></i>Domů </BDropdownItem>
           <BDropdownItem :to="'/doctor/chat'">
             <i class="bi bi-chat-dots me-2"></i>Chaty
           </BDropdownItem>
