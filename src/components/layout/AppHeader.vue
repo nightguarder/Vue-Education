@@ -14,6 +14,9 @@
           <BDropdownItem :to="'/patients/home'">
             <i class="bi bi-house me-2"></i>Přehled
           </BDropdownItem>
+          <BDropdownItem :to="'/patients/blog'">
+            <i class="bi bi-stars me-2"></i>Novinky z výzkumu
+          </BDropdownItem>
           <BDropdownItem :to="'/patients/worksheets'">
             <i class="bi bi-journal-text me-2"></i>Pracovní listy
           </BDropdownItem>
@@ -32,11 +35,8 @@
           <BDropdownItem :to="'/doctor/chat'">
             <i class="bi bi-chat-dots me-2"></i>Chaty
           </BDropdownItem>
-          <BDropdownItem :to="'/doctor/education'">
-            <i class="bi bi-search me-2"></i>Vyhledávání literatury
-          </BDropdownItem>
           <BDropdownItem :to="'/doctor/research'">
-            <i class="bi bi-journal-bookmark me-2"></i>Výzkumný sešit
+            <i class="bi bi-robot me-2"></i>Medical Researcher
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/transcription'">
             <i class="bi bi-mic me-2"></i>Přepis audia

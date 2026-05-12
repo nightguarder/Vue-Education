@@ -101,6 +101,16 @@
           </div>
           <div class="col-12 col-md-6 col-lg-4">
             <router-link
+              to="/patients/blog"
+              class="nav-card-btn h-100 d-block text-decoration-none"
+            >
+              <i class="bi bi-stars fs-3 text-info mb-2"></i>
+              <span class="fw-bold d-block">Novinky z výzkumu</span>
+              <small class="text-muted">Nejnovější poznatky z medicíny</small>
+            </router-link>
+          </div>
+          <div class="col-12 col-md-6 col-lg-4">
+            <router-link
               to="/patients/feedback"
               class="nav-card-btn h-100 d-block text-decoration-none"
             >

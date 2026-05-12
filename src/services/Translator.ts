@@ -9,6 +9,7 @@ class Translator {
   private static modelId: string = 'onnx-community/translategemma-text-4b-it-ONNX'
   private static dtype: DataType = 'q4'
   public static size: number = 3111894696
+  private useApi: boolean = true
 
   private constructor() {}
 
@@ -19,8 +20,20 @@ class Translator {
     return Translator.instance
   }
 
+  public setUseApi(use: boolean) {
+    this.useApi = use
+  }
+
   public async init(onProgress?: (progress: number) => void) {
     if (this.pipeline) return
+
+    // If we're using the API, we don't strictly need the local model,
+    // but we can load it as a background fallback if requested.
+    // For now, we only load if API is disabled or explicitly requested.
+    if (this.useApi) {
+      console.log('[Translator] Using API for translation')
+      return
+    }
 
     const loaded = new Map<string, number>()
     let newProgress = 0
@@ -46,8 +59,53 @@ class Translator {
   }
 
   public async translate(text: string, sourceLang: string, targetLang: string): Promise<string> {
+    if (this.useApi) {
+      try {
+        const useStructured = !(sourceLang === 'en' && targetLang === 'cs')
+        const messages = [
+          {
+            role: 'user',
+            content: useStructured
+              ? [
+                  {
+                    type: 'text',
+                    source_lang_code: sourceLang,
+                    target_lang_code: targetLang,
+                    text,
+                  },
+                ]
+              : text,
+          },
+        ]
+
+        const response = await fetch('/omlx/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OMLX_API_KEY || '5004'}`,
+          },
+          body: JSON.stringify({
+            model: 'translategemma-4b-it-8bit',
+            messages,
+            max_tokens: 2048,
+            stop: ['<end_of_turn>'],
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const content = data.choices?.[0]?.message?.content || ''
+          // Handle the trailing <end_of_turn> if present
+          return content.split('<end_of_turn>')[0].trim()
+        }
+        console.warn('[Translator] API response not OK:', response.status, response.statusText)
+      } catch (e) {
+        console.error('[Translator] API call failed:', e)
+      }
+    }
+
     if (!this.pipeline) {
-      throw new Error('Translator not initialized. Call init() first.')
+      throw new Error('Translator not initialized and API unavailable.')
     }
 
     const messages = [
@@ -72,7 +130,7 @@ class Translator {
   }
 
   public isReady(): boolean {
-    return this.pipeline !== undefined && this.pipeline !== null
+    return this.useApi || (this.pipeline !== undefined && this.pipeline !== null)
   }
 }
 

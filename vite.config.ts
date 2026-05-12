@@ -52,6 +52,19 @@ server: {
         target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/pmc': {
+        target: 'https://pmc.ncbi.nlm.nih.gov',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/pmc/, '/articles'),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      },
+      '/pmc-cdn': {
+        target: 'https://www.ncbi.nlm.nih.gov',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/pmc-cdn/, '')
       }
     }
   },

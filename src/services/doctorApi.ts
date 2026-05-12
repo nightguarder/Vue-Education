@@ -15,6 +15,7 @@ export interface ClinicalSession {
   transcript?: string
   ai_analysis?: any
   created_at?: string
+  status?: 'pending' | 'completed' | 'active'
   messages?: ChatMessage[] // We might store messages in ai_analysis or a separate column
 }
 

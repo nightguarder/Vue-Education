@@ -34,6 +34,11 @@ const router = createRouter({
       component: () => import('../views/patient/PatientResources.vue'),
     },
     {
+      path: '/patients/blog',
+      name: 'patient-blog',
+      component: () => import('../views/patient/PatientBlog.vue'),
+    },
+    {
       path: '/patients/audio',
       name: 'patient-audio',
       component: () => import('../views/patient/PatientAudioLibrary.vue'),
@@ -75,13 +80,12 @@ const router = createRouter({
     },
     {
       path: '/doctor/education',
-      name: 'doctor-education',
-      component: () => import('../views/doctor/DoctorEducation.vue'),
+      redirect: '/doctor/research'
     },
     {
       path: '/doctor/research',
-      name: 'doctor-research',
-      component: () => import('../views/doctor/ResearchNotebook.vue'),
+      name: 'medical-researcher',
+      component: () => import('../views/doctor/MedicalResearcher.vue'),
     },
     {
       path: '/doctor/transcription',

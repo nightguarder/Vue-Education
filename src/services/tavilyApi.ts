@@ -9,7 +9,17 @@ export interface TavilyResult {
   score?: number
 }
 
-export async function searchWeb(query: string, maxResults: number = 5): Promise<TavilyResult[]> {
+export interface TavilySearchResponse {
+  results: TavilyResult[]
+  images?: string[]
+  answer?: string
+}
+
+export async function searchWeb(
+  query: string, 
+  maxResults: number = 5, 
+  includeImages: boolean = false
+): Promise<TavilySearchResponse> {
   if (!TAVILY_API_KEY) {
     throw new Error('Tavily API key not configured. Please add VITE_TAVILY_API_KEY to .env')
   }
@@ -27,6 +37,7 @@ export async function searchWeb(query: string, maxResults: number = 5): Promise<
         max_results: maxResults,
         include_answer: true,
         include_raw_content: false,
+        include_images: includeImages
       }),
     })
 
@@ -36,7 +47,11 @@ export async function searchWeb(query: string, maxResults: number = 5): Promise<
     }
 
     const data = await response.json()
-    return data.results || []
+    return {
+      results: data.results || [],
+      images: data.images || [],
+      answer: data.answer
+    }
   } catch (error) {
     console.error('Tavily Search Error:', error)
     throw error

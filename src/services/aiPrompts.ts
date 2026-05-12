@@ -101,6 +101,33 @@ Abstrakt: ${abstract}
 export const WORKSHEET_SYSTEM_PROMPT =
   'Jste lékařský editor. Neuvádějte vnitřní monolog, přemýšlení ani doprovodný text.'
 
+export const BLOG_POST_PROMPT = (title: string, abstract: string) => `
+You are a medical science communicator. Write a structured "Deep Dive" blog post for busy doctors based on this paper.
+Title: ${title}
+Abstract: ${abstract}
+
+STRUCTURE:
+1. **The Core Message** (One sentence summary)
+2. **Why It Matters** (Clinical significance)
+3. **Key Findings** (3-4 bullet points)
+4. **Takeaways for Practice** (Specific advice for doctors)
+5. **The Bottom Line** (Concluding thought)
+
+Write in English. Use professional yet engaging tone. Use Markdown formatting.
+`
+
+export const PODCAST_SCRIPT_PROMPT = (title: string, abstract: string) => `
+You are a podcast host for "Clinical Minutes". Write a short (2-minute) script for a podcast episode summarizing this paper.
+Title: ${title}
+Abstract: ${abstract}
+
+ROLES:
+- Host A: Engaging, asks the "so what?" questions.
+- Host B: Medical expert, explains the data simply.
+
+Write in English. Keep it conversational and fast-paced.
+`
+
 export const RESEARCH_SUMMARY_PROMPT = (sources: string, topic: string) => `
 Na základě následujících webových zdrojů napiš komplexní výzkumnou zprávu v češtině.
 Rozděl na ## Úvod, ## Klíčová zjištění, ## Klinické implikace a ## Shrnutí.

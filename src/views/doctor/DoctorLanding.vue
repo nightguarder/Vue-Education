@@ -84,7 +84,7 @@
                 <router-link to="/doctor/transcription" class="btn btn-sm btn-outline-secondary">
                   <i class="bi bi-mic me-1"></i> Přepis
                 </router-link>
-                <router-link to="/doctor/education" class="btn btn-sm btn-outline-secondary">
+                <router-link to="/doctor/research" class="btn btn-sm btn-outline-secondary">
                   <i class="bi bi-search me-1"></i> PubMed
                 </router-link>
                 <router-link to="/doctor/research" class="btn btn-sm btn-outline-secondary">
@@ -136,7 +136,7 @@ function handleRequest() {
       router.push('/doctor/chat')
       break
     case 'pubmed':
-      router.push(`/doctor/education?q=${query}`)
+      router.push(`/doctor/research?q=${query}`)
       break
     case 'research':
       router.push(`/doctor/research?q=${query}`)
