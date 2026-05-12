@@ -33,13 +33,19 @@
         <BNavItemDropdown text="Portál pro lékaře">
           <BDropdownItem :to="'/'"> <i class="bi bi-house me-2"></i>Domů </BDropdownItem>
           <BDropdownItem :to="'/doctor/chat'">
-            <i class="bi bi-chat-dots me-2"></i>Chaty
+            <i class="bi bi-chat-dots me-2"></i>Lékařský Chat
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/research'">
             <i class="bi bi-robot me-2"></i>Medical Researcher
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/transcription'">
-            <i class="bi bi-mic me-2"></i>Přepis audia
+            <i class="bi bi-mic me-2"></i>Přepis konzultací
+          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/patients'">
+            <i class="bi bi-person-lines-fill me-2"></i>Správa pacientů
+          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/calendar'">
+            <i class="bi bi-calendar-check me-2"></i>Kalendář
           </BDropdownItem>
           <BDropdownDivider />
           <BDropdownItem :to="'/settings'">

@@ -56,7 +56,7 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
     }
 
     crumbs.push({
-      name: formatName(part),
+      name: formatName(part, index, parts),
       path: currentPath,
     })
   })
@@ -64,13 +64,16 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
   return crumbs
 })
 
-function formatName(pathPart: string): string {
+function formatName(pathPart: string, index: number, allParts: string[]): string {
+  const isDoctorPath = allParts[0] === 'doctor'
+  const isPatientPath = allParts[0] === 'patients'
+
   // Map specific paths to better names
   const mapping: Record<string, string> = {
-    patients: 'Portál pro pacienty',
-    doctor: 'Portál pro lékaře',
-    home: 'Domů',
-    worksheets: 'Pracovní listy',
+    patients: isDoctorPath ? 'Správa pacientů' : 'Portál pro pacienty',
+    doctor: 'Lékařské nástroje',
+    home: 'Nástěnka',
+    worksheets: isDoctorPath ? 'Pracovní listy' : 'Moje cvičení',
     stress: 'Zvládání stresu',
     'stress-relief': 'Zvládání stresu',
     resources: 'Zdroje',
@@ -78,9 +81,10 @@ function formatName(pathPart: string): string {
     infographics: 'Infografiky',
     feedback: 'Zpětná vazba',
     education: 'Vzdělávání',
-    research: 'Výzkum',
-    transcription: 'Přepis konzultace',
-    chat: 'Klinická sezení',
+    research: 'Medical Researcher',
+    transcription: 'Přepis konzultací',
+    chat: 'Lékařský Chat',
+    calendar: 'Kalendář',
     settings: 'Nastavení',
     contact: 'Kontakt',
   }
