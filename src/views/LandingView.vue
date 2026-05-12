@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { doctorApi } from '@/services/doctorApi'
 import { useStressReliefAI } from '@/composables/useStressReliefAI'
 
 const { getRandomQuote, isDownloadAllowed, isDownloading, downloadProgress } = useStressReliefAI()
@@ -13,15 +14,23 @@ const currentQuote = ref('')
 const isAiQuote = ref(false)
 const downloadAllowed = ref(true)
 
-onMounted(() => {
-  // Stats from localStorage (no backend required)
+onMounted(async () => {
+  // Stats from localStorage
   const chats = JSON.parse(localStorage.getItem('doctor_chats') || '[]')
   const patients = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
-  const blogPosts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
-
   totalSessions.value = chats.length
   totalPatients.value = patients.length
-  totalBlogPosts.value = blogPosts.length
+
+  // Blog posts from API, fallback to localStorage
+  try {
+    const posts = await doctorApi.getBlogPosts()
+    totalBlogPosts.value = posts.length
+  } catch (e) {
+    console.error('Failed to fetch blog posts from API:', e)
+    const posts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
+    totalBlogPosts.value = posts.length
+  }
+
   isLoading.value = false
 
   // Quote Logic

@@ -60,6 +60,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { doctorApi } from '@/services/doctorApi'
 import { marked } from 'marked'
 
 interface PublishedPost {
@@ -71,10 +72,26 @@ interface PublishedPost {
 }
 
 const publishedPosts = ref<PublishedPost[]>([])
+const isLoading = ref(true)
 
-function loadPosts() {
-  const posts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
-  publishedPosts.value = posts
+async function loadPosts() {
+  isLoading.value = true
+  try {
+    const posts = await doctorApi.getBlogPosts()
+    publishedPosts.value = posts.map((p: any) => ({
+      id: p.id,
+      title: p.title,
+      content: p.content,
+      date: p.created_at,
+      figures: p.figures || []
+    }))
+  } catch (e) {
+    console.error('Failed to fetch blog posts from API, falling back to localStorage:', e)
+    const posts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
+    publishedPosts.value = posts
+  } finally {
+    isLoading.value = false
+  }
 }
 
 function formatDate(dateStr: string) {

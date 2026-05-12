@@ -142,5 +142,43 @@ export const doctorApi = {
     })
     if (!response.ok) throw new Error('Failed to delete vacation')
     return await response.json()
+  },
+
+  /**
+   * Get all published blog posts
+   */
+  async getBlogPosts(): Promise<any[]> {
+    const response = await fetch(`${API_BASE}/blog-posts`)
+    if (!response.ok) throw new Error('Failed to fetch blog posts')
+    return await response.json()
+  },
+
+  /**
+   * Publish a new blog post
+   */
+  async publishBlogPost(post: {
+    title: string
+    content: string
+    type?: string
+    figures?: any[]
+  }): Promise<any> {
+    const response = await fetch(`${API_BASE}/blog-posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(post)
+    })
+    if (!response.ok) throw new Error('Failed to publish blog post')
+    return await response.json()
+  },
+
+  /**
+   * Delete a blog post
+   */
+  async deleteBlogPost(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE}/blog-posts/${id}`, {
+      method: 'DELETE'
+    })
+    if (!response.ok) throw new Error('Failed to delete blog post')
+    return await response.json()
   }
 }

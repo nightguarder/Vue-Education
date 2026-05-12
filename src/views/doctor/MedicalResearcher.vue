@@ -367,7 +367,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
 import { searchMedicalLiterature, formatAuthors, fetchArticleFigures, type PubMedArticle, type PubMedFigure } from '@/services/pubmedApi'
 import { searchWeb, type TavilyResult } from '@/services/tavilyApi'
 import { useTranslation } from '@/composables/useTranslation'
@@ -378,7 +378,10 @@ import {
   RESEARCH_SUMMARY_PROMPT, 
 } from '@/services/aiPrompts'
 import { fetchChatCompletion, streamChatCompletion, type ChatMessage as OmlxMessage } from '@/services/omlxApi'
+import { doctorApi } from '@/services/doctorApi'
 import { marked } from 'marked'
+
+const DRAFT_KEY = 'blog_draft'
 
 // State
 const searchQuery = ref('')
@@ -595,6 +598,7 @@ async function createDeepDive(article: PubMedArticle) {
       figures,
       loading: false
     }
+    saveDraft(activeDeepDive.value)
   } catch (err) {
     console.error('Deep Dive failed:', err)
     activeDeepDive.value = null
@@ -640,6 +644,19 @@ function scrollToBottom() {
   }
 }
 
+function saveDraft(dive: any) {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(dive))
+}
+
+function restoreDraft(): any | null {
+  const stored = localStorage.getItem(DRAFT_KEY)
+  return stored ? JSON.parse(stored) : null
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY)
+}
+
 function openPublishModal() {
   if (!activeDeepDive.value || activeDeepDive.value.loading) return
   
@@ -651,30 +668,25 @@ function openPublishModal() {
 
 function confirmPublish() {
   const blogPost = {
-    id: Date.now(),
     title: editPost.title,
     content: editPost.content,
     type: 'deep-dive',
-    date: new Date().toISOString(),
-    figures: [...editPost.figures] // Ensure we copy the array
+    figures: [...editPost.figures]
   }
 
-  // 1. Get existing posts
-  const existingPosts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
-  
-  // 2. Add new post to top
-  existingPosts.unshift(blogPost)
-  
-  // 3. Save back to localStorage
-  localStorage.setItem('published_blog_posts', JSON.stringify(existingPosts))
-
-  // 4. Cleanup UI
-  showPublishModal.value = false
-  
-  // 5. Success feedback
-  alert('Článek byl úspěšně publikován do sekce Novinky z výzkumu!')
-  
-  console.log('[Publish] Article saved to localStorage:', blogPost)
+  doctorApi.publishBlogPost(blogPost).then(() => {
+    clearDraft()
+    showPublishModal.value = false
+    alert('Článek byl úspěšně publikován do sekce Novinky z výzkumu!')
+  }).catch((err) => {
+    console.error('[Publish] API failed, saving locally:', err)
+    const existingPosts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
+    existingPosts.unshift({ id: Date.now(), ...blogPost, date: new Date().toISOString() })
+    localStorage.setItem('published_blog_posts', JSON.stringify(existingPosts))
+    clearDraft()
+    showPublishModal.value = false
+    alert('Článek uložen lokálně (backend nedostupný).')
+  })
 }
 
 async function translateToCzechAction() {
@@ -706,6 +718,13 @@ function truncate(text: string, len: number) {
 function renderMarkdown(text: string) {
   return text ? marked.parse(text) : ''
 }
+
+onMounted(() => {
+  const draft = restoreDraft()
+  if (draft && !activeDeepDive.value) {
+    activeDeepDive.value = { ...draft, loading: false }
+  }
+})
 </script>
 
 <style scoped lang="scss">
