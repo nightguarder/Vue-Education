@@ -1,40 +1,28 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { doctorApi } from '@/services/doctorApi'
 import { useStressReliefAI } from '@/composables/useStressReliefAI'
 
 const { getRandomQuote, isDownloadAllowed, isDownloading, downloadProgress } = useStressReliefAI()
 
 const totalSessions = ref(0)
 const totalPatients = ref(0)
-const pendingWorksheets = ref(0)
-const totalWorksheets = ref(0)
+const totalBlogPosts = ref(0)
 const isLoading = ref(true)
 
 const currentQuote = ref('')
 const isAiQuote = ref(false)
 const downloadAllowed = ref(true)
 
-onMounted(async () => {
-  // Stats Loading
-  try {
-    // In a real local-only app, we might fetch from localStorage
-    const sessions = await doctorApi.getSessions()
-    totalSessions.value = sessions.length
+onMounted(() => {
+  // Stats from localStorage (no backend required)
+  const chats = JSON.parse(localStorage.getItem('doctor_chats') || '[]')
+  const patients = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
+  const blogPosts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
 
-    const uniquePatients = new Set(sessions.map(s => s.patient_id))
-    totalPatients.value = uniquePatients.size
-    
-    pendingWorksheets.value = sessions.filter(s => s.status === 'pending').length
-    
-    const surveys = await doctorApi.getSurveys()
-    totalWorksheets.value = surveys.length
-
-  } catch (e) {
-    console.error('Failed to load stats:', e)
-  } finally {
-    isLoading.value = false
-  }
+  totalSessions.value = chats.length
+  totalPatients.value = patients.length
+  totalBlogPosts.value = blogPosts.length
+  isLoading.value = false
 
   // Quote Logic
   currentQuote.value = getRandomQuote()
@@ -92,21 +80,17 @@ onMounted(async () => {
         <div class="card shadow-sm border-0 rounded-4 overflow-hidden stats-card">
           <div class="card-body p-3">
             <div class="row text-center g-2">
-              <div class="col-6 col-md-3">
+              <div class="col-4">
                 <h5 class="fw-bold text-primary mb-0">{{ isLoading ? '-' : totalSessions }}</h5>
                 <small class="text-muted extra-small">Klinických chatů</small>
               </div>
-              <div class="col-6 col-md-3">
+              <div class="col-4">
                 <h5 class="fw-bold text-success mb-0">{{ isLoading ? '-' : totalPatients }}</h5>
                 <small class="text-muted extra-small">Evidovaných pacientů</small>
               </div>
-              <div class="col-6 col-md-3">
-                <h5 class="fw-bold text-warning mb-0">{{ isLoading ? '-' : pendingWorksheets }}</h5>
-                <small class="text-muted extra-small">Rozpracovaných listů</small>
-              </div>
-              <div class="col-6 col-md-3">
-                <h5 class="fw-bold text-info mb-0">{{ isLoading ? '-' : totalWorksheets }}</h5>
-                <small class="text-muted extra-small">Odeslaných materiálů</small>
+              <div class="col-4">
+                <h5 class="fw-bold text-warning mb-0">{{ isLoading ? '-' : totalBlogPosts }}</h5>
+                <small class="text-muted extra-small">Publikovaných blogů</small>
               </div>
             </div>
           </div>

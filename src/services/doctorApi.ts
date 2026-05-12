@@ -64,5 +64,83 @@ export const doctorApi = {
     })
     if (!response.ok) throw new Error('Failed to create worksheet')
     return await response.json()
+  },
+
+  /**
+   * Get vacation settings (total days, used, etc.)
+   */
+  async getVacationSettings(doctorId: string = 'DOC-default'): Promise<any> {
+    const response = await fetch(`${API_BASE}/vacations/settings?doctor_id=${doctorId}`)
+    if (!response.ok) throw new Error('Failed to fetch vacation settings')
+    return await response.json()
+  },
+
+  /**
+   * Update vacation settings
+   */
+  async updateVacationSettings(doctorId: string = 'DOC-default', settings: { total_days: number }): Promise<any> {
+    const response = await fetch(`${API_BASE}/vacations/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctor_id: doctorId, ...settings })
+    })
+    if (!response.ok) throw new Error('Failed to update vacation settings')
+    return await response.json()
+  },
+
+  /**
+   * Get all vacations for a doctor
+   */
+  async getVacations(doctorId: string = 'DOC-default'): Promise<any[]> {
+    const response = await fetch(`${API_BASE}/vacations?doctor_id=${doctorId}`)
+    if (!response.ok) throw new Error('Failed to fetch vacations')
+    return await response.json()
+  },
+
+  /**
+   * Add a new vacation
+   */
+  async addVacation(vacation: {
+    doctor_id: string
+    start_date: string
+    end_date: string
+    reason: 'vacation' | 'sick' | 'personal' | 'other'
+  }): Promise<any> {
+    const response = await fetch(`${API_BASE}/vacations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vacation)
+    })
+    if (!response.ok) throw new Error('Failed to add vacation')
+    return await response.json()
+  },
+
+  /**
+   * Update an existing vacation
+   */
+  async updateVacation(id: number, updates: {
+    start_date?: string
+    end_date?: string
+    reason?: string
+    status?: 'active' | 'cancelled'
+  }): Promise<any> {
+    const response = await fetch(`${API_BASE}/vacations/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    })
+    if (!response.ok) throw new Error('Failed to update vacation')
+    return await response.json()
+  },
+
+  /**
+   * Delete a vacation
+   */
+  async deleteVacation(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE}/vacations/${id}`, {
+      method: 'DELETE'
+    })
+    if (!response.ok) throw new Error('Failed to delete vacation')
+    return await response.json()
   }
 }

@@ -411,6 +411,21 @@
     <div v-if="!newSessionData.isExisting" class="mb-3">
       <label class="form-label small fw-bold">Jméno pacienta</label>
       <input v-model="newSessionData.name" type="text" class="form-control" placeholder="Zadejte jméno..." autofocus>
+      <div class="row g-2 mt-2">
+        <div class="col-6">
+          <label class="form-label small fw-bold">Věk</label>
+          <input v-model="newSessionData.age" type="number" class="form-control" placeholder="Věk">
+        </div>
+        <div class="col-6">
+          <label class="form-label small fw-bold">Pohlaví</label>
+          <select v-model="newSessionData.gender" class="form-select">
+            <option value="">Vybrat</option>
+            <option value="Muž">Muž</option>
+            <option value="Žena">Žena</option>
+            <option value="Jiné">Jiné</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div v-else class="mb-3">
       <label class="form-label small fw-bold">Vybrat pacienta</label>
@@ -480,6 +495,8 @@ const streamingContent = ref('')
 
 const newSessionData = reactive({
   name: '',
+  age: null as number | null,
+  gender: '',
   patientId: '',
   isExisting: false
 })
@@ -565,20 +582,26 @@ function createNewSession() {
 function confirmNewSession() {
   let name = ''
   let patId = ''
+  let age: number | undefined
+  let gender: string | undefined
   
   if (newSessionData.isExisting) {
     const p = existingPatients.value.find(p => p.id === newSessionData.patientId)
     if (!p) return
     name = p.name
     patId = p.id
+    age = p.age
+    gender = p.gender
   } else {
     if (!newSessionData.name) return
     name = newSessionData.name
+    age = newSessionData.age ?? undefined
+    gender = newSessionData.gender || undefined
     patId = `PAT-${Math.random().toString(36).substring(2, 7)}`
     
     // Auto-save new patient to registry
     const stored = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
-    stored.unshift({ id: patId, name, age: 30, gender: 'Žena', createdAt: new Date().toISOString() })
+    stored.unshift({ id: patId, name, age, gender, createdAt: new Date().toISOString() })
     localStorage.setItem('doctor_patients', JSON.stringify(stored))
   }
 
@@ -589,6 +612,8 @@ function confirmNewSession() {
     chatId: newChatId,
     patientId: patId,
     patientName: name,
+    patientAge: age,
+    patientGender: gender,
     createdAt: now,
     lastActivity: now,
     messages: []
@@ -600,6 +625,8 @@ function confirmNewSession() {
   
   // Reset form
   newSessionData.name = ''
+  newSessionData.age = null
+  newSessionData.gender = ''
   newSessionData.patientId = ''
   newSessionData.isExisting = false
 }

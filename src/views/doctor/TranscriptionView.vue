@@ -58,15 +58,15 @@
               <div v-if="!isExistingPatient" class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label small fw-bold">Celé jméno *</label>
-                  <input v-model="patientName" type="text" class="form-control" placeholder="Jméno a příjmení" required :disabled="!!existingChatId" />
+                  <input v-model="patientName" type="text" class="form-control" placeholder="Jméno a příjmení" required />
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small fw-bold">Věk</label>
-                  <input v-model="patientAge" type="number" class="form-control" placeholder="Věk" :disabled="!!existingChatId" />
+                  <input v-model="patientAge" type="number" class="form-control" placeholder="Věk" />
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small fw-bold">Pohlaví</label>
-                  <select v-model="patientGender" class="form-select" :disabled="!!existingChatId">
+                  <select v-model="patientGender" class="form-select">
                     <option value="">Vybrat</option>
                     <option value="Muž">Muž</option>
                     <option value="Žena">Žena</option>
@@ -163,10 +163,12 @@
                 <div class="col-md-8">
                   <div class="d-flex align-items-center mb-2">
                     <i class="bi bi-check-circle-fill text-success h4 mb-0 me-3"></i>
-                    <h5 class="text-success fw-bold mb-0">Sezení bylo úspěšně vytvořeno!</h5>
+                    <h5 class="text-success fw-bold mb-0">
+                      {{ existingChatId ? 'Přepis byl přidán k sezení!' : 'Sezení bylo úspěšně vytvořeno!' }}
+                    </h5>
                   </div>
                   <p class="text-muted mb-3 mb-md-0">
-                    Nyní můžete pokračovat k AI analýze nebo požádat pacienta o vyplnění vstupního dotazníku.
+                    {{ existingChatId ? 'Nyní můžete pokračovat k AI analýze v chatu.' : 'Nyní můžete pokračovat k AI analýze nebo požádat pacienta o vyplnění vstupního dotazníku.' }}
                   </p>
                 </div>
                 <div class="col-md-4 text-md-end">
@@ -174,7 +176,7 @@
                     <router-link :to="`/doctor/chat/${createdChat.chatId}`" class="btn btn-success rounded-pill">
                       <i class="bi bi-chat-dots me-2"></i>Přejít do chatu
                     </router-link>
-                    <button class="btn btn-outline-success rounded-pill" @click="showQrModal = true">
+                    <button v-if="!existingChatId" class="btn btn-outline-success rounded-pill" @click="showQrModal = true">
                       <i class="bi bi-qr-code me-2"></i>Zobrazit QR kód
                     </button>
                   </div>
@@ -261,6 +263,9 @@ const transcriptionEndTime = ref(0)
 const webGpuModelReady = ref(false)
 const showQrModal = ref(false)
 
+// Existing chat prefill
+const existingChatId = ref('')
+
 // Created chat
 const createdChat = ref<{ chatId: string; patientName: string; patientId: string } | null>(null)
 
@@ -273,6 +278,22 @@ onMounted(() => {
   const notesParam = route.query.notes as string
   if (notesParam) {
     patientNotes.value = decodeURIComponent(notesParam)
+  }
+
+  const chatIdParam = route.query.chatId as string
+  if (chatIdParam) {
+    existingChatId.value = chatIdParam
+    isExistingPatient.value = false
+
+    const nameParam = route.query.patientName as string
+    const ageParam = route.query.patientAge as string
+    const genderParam = route.query.patientGender as string
+    const notesParam = route.query.patientNotes as string
+
+    if (nameParam) patientName.value = decodeURIComponent(nameParam)
+    if (ageParam) patientAge.value = parseInt(ageParam) || undefined
+    if (genderParam) patientGender.value = decodeURIComponent(genderParam)
+    if (notesParam) patientNotes.value = decodeURIComponent(notesParam)
   }
 })
 
@@ -335,53 +356,74 @@ async function startTranscription() {
     transcriptionResult.value = result.text
     transcriptionEndTime.value = Date.now()
 
-    // 1. Ensure patient exists or create new
-    let patId = selectedPatientId.value
-    if (!isExistingPatient.value) {
-      patId = `PAT-${Math.random().toString(36).substring(2, 7)}`
-      const pData = { 
-        id: patId, 
-        name: patientName.value, 
-        age: patientAge.value || 30, 
-        gender: patientGender.value || 'Neznámé', 
-        createdAt: new Date().toISOString() 
-      }
-      const existingPats = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
-      existingPats.unshift(pData)
-      localStorage.setItem('doctor_patients', JSON.stringify(existingPats))
-    }
-
-    // 2. Create chat session
-    const chatId = 'SES-' + Date.now().toString(36).toUpperCase()
-    const chatData = {
-      chatId,
-      patientId: patId,
-      patientName: patientName.value,
-      patientAge: patientAge.value,
-      patientGender: patientGender.value,
-      patientNotes: patientNotes.value,
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-      transcript: result.text,
-      messages: [
-        {
-          role: 'system',
-          content: `Patient: ${patientName.value}${patientAge.value ? `, Age: ${patientAge.value}` : ''}${patientGender.value ? `, Gender: ${patientGender.value}` : ''}${patientNotes.value ? `\nNotes: ${patientNotes.value}` : ''}`,
-        },
-        {
+    if (existingChatId.value) {
+      // Update existing chat with transcript
+      const existingChats = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]')
+      const chatIndex = existingChats.findIndex((c: any) => c.chatId === existingChatId.value)
+      
+      if (chatIndex >= 0) {
+        existingChats[chatIndex].transcript = result.text
+        existingChats[chatIndex].lastActivity = new Date().toISOString()
+        existingChats[chatIndex].messages.push({
           role: 'user',
           content: `[Audio Přepis]\n\n${result.text}`,
           timestamp: new Date().toISOString(),
-        },
-      ],
+        })
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(existingChats))
+        createdChat.value = { 
+          chatId: existingChatId.value, 
+          patientName: existingChats[chatIndex].patientName, 
+          patientId: existingChats[chatIndex].patientId 
+        }
+      }
+    } else {
+      // 1. Ensure patient exists or create new
+      let patId = selectedPatientId.value
+      if (!isExistingPatient.value) {
+        patId = `PAT-${Math.random().toString(36).substring(2, 7)}`
+        const pData = { 
+          id: patId, 
+          name: patientName.value, 
+          age: patientAge.value || 30, 
+          gender: patientGender.value || 'Neznámé', 
+          createdAt: new Date().toISOString() 
+        }
+        const existingPats = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
+        existingPats.unshift(pData)
+        localStorage.setItem('doctor_patients', JSON.stringify(existingPats))
+      }
+
+      // 2. Create chat session
+      const chatId = 'SES-' + Date.now().toString(36).toUpperCase()
+      const chatData = {
+        chatId,
+        patientId: patId,
+        patientName: patientName.value,
+        patientAge: patientAge.value,
+        patientGender: patientGender.value,
+        patientNotes: patientNotes.value,
+        createdAt: new Date().toISOString(),
+        lastActivity: new Date().toISOString(),
+        transcript: result.text,
+        messages: [
+          {
+            role: 'system',
+            content: `Patient: ${patientName.value}${patientAge.value ? `, Age: ${patientAge.value}` : ''}${patientGender.value ? `, Gender: ${patientGender.value}` : ''}${patientNotes.value ? `\nNotes: ${patientNotes.value}` : ''}`,
+          },
+          {
+            role: 'user',
+            content: `[Audio Přepis]\n\n${result.text}`,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      }
+
+      const existingChats = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]')
+      existingChats.unshift(chatData)
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(existingChats))
+
+      createdChat.value = { chatId, patientName: patientName.value, patientId: patId }
     }
-
-    // Save
-    const existingChats = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]')
-    existingChats.unshift(chatData)
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(existingChats))
-
-    createdChat.value = { chatId, patientName: patientName.value, patientId: patId }
   } catch (error: any) {
     console.error('[Transcription] Error:', error)
     alert(`Analýza selhala: ${error.message}`)
