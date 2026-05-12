@@ -92,6 +92,9 @@
               </div>
               <h5 class="fw-bold">Vyberte klinické sezení</h5>
               <p class="text-muted">Vyberte pacienta z levého panelu pro zahájení analýzy</p>
+              <button class="btn btn-primary rounded-pill px-4 mt-3" @click="createNewSession">
+                <i class="bi bi-plus-lg me-2"></i>Nové rychlé sezení
+              </button>
             </div>
           </div>
 
@@ -222,9 +225,14 @@
             <div class="card-body pt-0">
               <!-- Profile Info -->
               <div class="context-section mb-4 p-3 bg-primary bg-opacity-10 rounded-4">
-                <div class="d-flex align-items-center mb-3 text-primary">
-                  <i class="bi bi-person-badge me-2 h5 mb-0"></i>
-                  <h6 class="mb-0 fw-bold">Demografie</h6>
+                <div class="d-flex align-items-center justify-content-between mb-3 text-primary">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-person-badge me-2 h5 mb-0"></i>
+                    <h6 class="mb-0 fw-bold">Demografie</h6>
+                  </div>
+                  <button class="btn btn-sm btn-link p-0 text-primary" @click="showQrModal = true" title="Show Survey QR">
+                    <i class="bi bi-qr-code"></i>
+                  </button>
                 </div>
                 <div class="row g-2">
                   <div class="col-6">
@@ -237,6 +245,25 @@
                       currentChat.patientGender || 'N/A'
                     }}</span>
                   </div>
+                </div>
+              </div>
+
+              <!-- Survey Status section -->
+              <div class="context-section mb-4">
+                <h6 class="fw-bold small text-muted text-uppercase mb-2 tracking-wider">
+                  Průzkumy pacienta
+                </h6>
+                <div v-if="currentSessionSurveys.length > 0" class="list-group list-group-flush border rounded-4 overflow-hidden shadow-sm bg-white">
+                  <div v-for="s in currentSessionSurveys" :key="s.id" class="list-group-item p-2 small">
+                    <div class="d-flex justify-content-between">
+                      <span class="fw-bold text-primary">Vstupní dotazník</span>
+                      <span class="text-muted">{{ formatDate(s.created_at) }}</span>
+                    </div>
+                    <div class="truncate-1 opacity-75">{{ s.comments || 'Bez komentáře' }}</div>
+                  </div>
+                </div>
+                <div v-else class="p-3 bg-light rounded-4 text-center border-dashed">
+                  <small class="text-muted">Žádný vyplněný dotazník k tomuto sezení.</small>
                 </div>
               </div>
 
@@ -301,9 +328,15 @@
                     <div v-if="currentChat.transcript">
                       <div class="markdown-content text-dark-50" v-html="renderMarkdown(currentChat.transcript)"></div>
                     </div>
-                    <div v-else class="text-center py-5 text-muted">
+                    <div v-else class="text-center py-4 text-muted">
                       <i class="bi bi-mic-mute display-6 mb-2 opacity-25"></i>
                       <p class="small mb-0">Žádný přepis není k dispozici.</p>
+                      <router-link
+                        :to="`/doctor/transcription?chatId=${currentChat.chatId}&patientName=${encodeURIComponent(currentChat.patientName)}&patientAge=${currentChat.patientAge || ''}&patientGender=${encodeURIComponent(currentChat.patientGender || '')}&patientNotes=${encodeURIComponent(currentChat.patientNotes || '')}`"
+                        class="btn btn-sm btn-outline-primary mt-3 rounded-pill"
+                      >
+                        <i class="bi bi-mic me-1"></i>Nahrát přepis
+                      </router-link>
                     </div>
                   </template>
                 </div>
@@ -362,18 +395,48 @@
     </div>
   </div>
 
+  <!-- New Session Modal -->
+  <BModal v-model="showNewSessionModal" title="Zahájit nové sezení" @ok="confirmNewSession" ok-title="Zahájit" cancel-title="Zrušit">
+    <div class="mb-3">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" v-model="newSessionData.isExisting" :value="false" id="newPat">
+        <label class="form-check-label" for="newPat">Nový pacient</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" v-model="newSessionData.isExisting" :value="true" id="existPat">
+        <label class="form-check-label" for="existPat">Stávající pacient</label>
+      </div>
+    </div>
+    
+    <div v-if="!newSessionData.isExisting" class="mb-3">
+      <label class="form-label small fw-bold">Jméno pacienta</label>
+      <input v-model="newSessionData.name" type="text" class="form-control" placeholder="Zadejte jméno..." autofocus>
+    </div>
+    <div v-else class="mb-3">
+      <label class="form-label small fw-bold">Vybrat pacienta</label>
+      <select v-model="newSessionData.patientId" class="form-select">
+        <option value="">-- Vyberte --</option>
+        <option v-for="p in existingPatients" :key="p.id" :value="p.id">{{ p.name }}</option>
+      </select>
+    </div>
+  </BModal>
+
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getSummaryAnalysisPrompt, getChatSystemMessage, getMedicationTrackerPrompt } from '@/services/aiPrompts'
 import { doctorApi, type ClinicalSession } from '@/services/doctorApi'
 import SurveyQRCode from '@/components/SurveyQRCode.vue'
+import { useSurvey } from '@/composables/useSurvey'
 import { Marked } from 'marked'
 
 const route = useRoute()
 const router = useRouter()
+
+// Survey logic
+const { fetchSurveys, getSurveysBySession } = useSurvey()
 
 // Configure marked instance
 const marked = new Marked({
@@ -412,11 +475,25 @@ const isLoading = ref(false)
 const activeContextTab = ref<'summary' | 'transcript'>('summary')
 const showChatList = ref(true)
 const showQrModal = ref(false)
+const showNewSessionModal = ref(false)
 const streamingContent = ref('')
+
+const newSessionData = reactive({
+  name: '',
+  patientId: '',
+  isExisting: false
+})
+
+const existingPatients = ref<any[]>([])
 
 const currentChat = computed(() => {
   if (!currentChatId.value) return null
   return chats.value.find((c) => c.chatId === currentChatId.value) || null
+})
+
+const currentSessionSurveys = computed(() => {
+  if (!currentChat.value) return []
+  return getSurveysBySession(currentChat.value.chatId).value
 })
 
 async function loadChats() {
@@ -477,19 +554,40 @@ function selectChat(chatId: string) {
   currentChatId.value = chatId
   router.replace(`/doctor/chat/${chatId}`)
   nextTick(scrollToBottom)
+  fetchSurveys() // Refresh surveys when selecting a chat
 }
 
 function createNewSession() {
-  const name = prompt('Zadejte jméno pacienta:')
-  if (!name) return
+  existingPatients.value = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
+  showNewSessionModal.value = true
+}
 
-  const newPatientId = `PAT-${Math.random().toString(36).substring(2, 7)}`
+function confirmNewSession() {
+  let name = ''
+  let patId = ''
+  
+  if (newSessionData.isExisting) {
+    const p = existingPatients.value.find(p => p.id === newSessionData.patientId)
+    if (!p) return
+    name = p.name
+    patId = p.id
+  } else {
+    if (!newSessionData.name) return
+    name = newSessionData.name
+    patId = `PAT-${Math.random().toString(36).substring(2, 7)}`
+    
+    // Auto-save new patient to registry
+    const stored = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
+    stored.unshift({ id: patId, name, age: 30, gender: 'Žena', createdAt: new Date().toISOString() })
+    localStorage.setItem('doctor_patients', JSON.stringify(stored))
+  }
+
   const newChatId = `SES-${Math.random().toString(36).substring(2, 7)}`
   const now = new Date().toISOString()
 
   const newChat: Chat = {
     chatId: newChatId,
-    patientId: newPatientId,
+    patientId: patId,
     patientName: name,
     createdAt: now,
     lastActivity: now,
@@ -499,6 +597,11 @@ function createNewSession() {
   chats.value.unshift(newChat)
   selectChat(newChatId)
   saveChat(newChat)
+  
+  // Reset form
+  newSessionData.name = ''
+  newSessionData.patientId = ''
+  newSessionData.isExisting = false
 }
 
 function scrollToBottom() {
@@ -814,6 +917,7 @@ function formatTime(timestamp: string): string {
 
 onMounted(() => {
   loadChats()
+  fetchSurveys()
   const chatId = route.params.chatId as string
   if (chatId) {
     currentChatId.value = chatId

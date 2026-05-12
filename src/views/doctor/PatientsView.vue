@@ -60,6 +60,7 @@
             <div class="btn-group rounded-pill overflow-hidden border">
               <button class="btn btn-outline-primary px-4 py-2" :class="{ active: activeTab === 'info' }" @click="activeTab = 'info'">Informace</button>
               <button class="btn btn-outline-primary px-4 py-2" :class="{ active: activeTab === 'worksheets' }" @click="activeTab = 'worksheets'">Pracovní listy</button>
+              <button class="btn btn-outline-primary px-4 py-2" :class="{ active: activeTab === 'surveys' }" @click="activeTab = 'surveys'">Průzkumy</button>
             </div>
           </div>
 
@@ -72,7 +73,7 @@
                   <div class="p-3 bg-light rounded-4 mb-3">
                     <div class="mb-2"><span class="text-muted small">Věk:</span> <span class="fw-bold ms-2">{{ selectedPatient.age }} let</span></div>
                     <div class="mb-2"><span class="text-muted small">Pohlaví:</span> <span class="fw-bold ms-2">{{ selectedPatient.gender }}</span></div>
-                    <div><span class="text-muted small">Kontakt:</span> <span class="fw-bold ms-2">{{ selectedPatient.phone }}</span></div>
+                    <div><span class="text-muted small">Kontakt:</span> <span class="fw-bold ms-2">{{ selectedPatient.phone || 'N/A' }}</span></div>
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -138,6 +139,49 @@
                 </div>
               </div>
             </div>
+
+            <!-- Tab: Surveys -->
+            <div v-if="activeTab === 'surveys'" class="fade-in">
+              <div class="row g-4">
+                <div class="col-md-5">
+                  <SurveyQRCode 
+                    :patientId="selectedPatient.id" 
+                    :patientName="selectedPatient.name"
+                    :doctorId="'DOC-default'"
+                    sessionId="GEN-INTAKE"
+                  />
+                </div>
+                <div class="col-md-7">
+                  <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0">Historie dotazníků</h5>
+                    <button class="btn btn-sm btn-link text-primary" @click="fetchSurveys">
+                      <i class="bi bi-arrow-clockwise me-1"></i>Aktualizovat
+                    </button>
+                  </div>
+                  <div v-if="isLoadingSurveys" class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                  </div>
+                  <div v-else class="list-group list-group-flush border rounded-4 overflow-hidden">
+                    <div v-for="survey in patientSurveys" :key="survey.id" class="list-group-item p-3">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">Obecná zpětná vazba</span>
+                        <small class="text-muted">{{ formatDate(survey.created_at) }}</small>
+                      </div>
+                      <div class="survey-results small">
+                        <div v-if="survey.duration" class="mb-1"><strong>Délka:</strong> {{ survey.duration }}</div>
+                        <div v-if="survey.attention" class="mb-1"><strong>Pozornost:</strong> {{ survey.attention }}</div>
+                        <div v-if="survey.answered" class="mb-1"><strong>Zodpovězeno:</strong> {{ survey.answered }}</div>
+                        <div v-if="survey.comments" class="mt-2 p-2 bg-light rounded italic text-muted">"{{ survey.comments }}"</div>
+                      </div>
+                    </div>
+                    <div v-if="patientSurveys.length === 0" class="text-center py-5">
+                      <i class="bi bi-clipboard-check display-4 opacity-25"></i>
+                      <p class="text-muted mt-2">Zatím žádné vyplněné dotazníky.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -186,7 +230,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import SurveyQRCode from '@/components/SurveyQRCode.vue'
+import { useSurvey } from '@/composables/useSurvey'
 
 interface Patient {
   id: string
@@ -214,6 +260,13 @@ const activeTab = ref('info')
 const patients = ref<Patient[]>([])
 const worksheets = ref<Worksheet[]>([])
 const sessions = ref<any[]>([])
+
+// Survey logic
+const { fetchSurveys, getSurveysByPatient, isLoading: isLoadingSurveys } = useSurvey()
+const patientSurveys = computed(() => {
+  if (!selectedPatient.value) return []
+  return getSurveysByPatient(selectedPatient.value.id).value
+})
 
 // Modal State
 const showAddPatientModal = ref(false)
@@ -269,7 +322,7 @@ function saveWorksheets() {
 function addPatient() {
   if (!newPatient.name) return
   const id = Math.random().toString(36).substring(2, 9)
-  patients.value.unshift({ id, ...newPatient })
+  patients.value.unshift({ id: `PAT-${id}`, ...newPatient })
   savePatients()
   showAddPatientModal.value = false
   // Reset
@@ -314,6 +367,14 @@ function truncate(text: string, len: number) {
 
 onMounted(() => {
   loadData()
+  fetchSurveys()
+})
+
+// Refresh surveys when tab changes to surveys
+watch(activeTab, (newTab) => {
+  if (newTab === 'surveys') {
+    fetchSurveys()
+  }
 })
 </script>
 
@@ -349,5 +410,9 @@ onMounted(() => {
 
 .border-dashed {
   border-style: dashed !important;
+}
+
+.survey-results {
+  line-height: 1.4;
 }
 </style>
