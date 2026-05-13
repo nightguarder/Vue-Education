@@ -8,6 +8,7 @@ import { BootstrapVueNextResolver } from 'bootstrap-vue-next/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [
     vue(),
     vueDevTools(),
@@ -30,48 +31,43 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-server: {
+  server: {
     proxy: {
       '/omlx': {
         target: `http://127.0.0.1:${process.env.VITE_OMLX_PORT || '8888'}`,
         changeOrigin: true,
         rewrite: (path) => {
-          // Don't rewrite audio endpoints
           if (path.includes('/audio/')) {
             return path.replace(/^\/omlx/, '')
           }
           return path.replace(/^\/omlx/, '/v1')
         },
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.log('[OMLX Proxy Error]', err.message)
-          })
-        }
       },
       '/api': {
         target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
-      '/pmc': {
-        target: 'https://pmc.ncbi.nlm.nih.gov',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/pmc/, '/articles'),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      },
-      '/pmc-cdn': {
-        target: 'https://www.ncbi.nlm.nih.gov',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/pmc-cdn/, '')
-      }
     }
   },
   build: {
+    outDir: 'dist',
+    emptyOutDir: true,
     rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        sw: fileURLToPath(new URL('./src/sw.ts', import.meta.url)),
+      },
+      output: {
+        // Keep sw.js at the root, everything else in assets/
+        entryFileNames: (chunk) => {
+          if (chunk.name === 'sw') return 'sw.js'
+          return 'assets/[name]-[hash].js'
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
       plugins: [
-        /* Automatic build-time manifest */
         {
           name: 'build-manifest',
           generateBundle(options, bundle) {
@@ -86,20 +82,10 @@ server: {
               type: 'asset',
               fileName: 'cache-manifest.json',
               source: JSON.stringify(manifest),
-              name: 'cache-manifest.json',
             })
           },
         },
       ],
-      input: {
-        main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        sw: fileURLToPath(new URL('./src/sw.ts', import.meta.url)),
-      },
-      output: {
-        entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'sw' ? '[name].js' : 'assets/[name]-[hash].js'
-        },
-      },
     },
   },
 })
