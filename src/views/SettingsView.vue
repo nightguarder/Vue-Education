@@ -25,6 +25,17 @@
               {{ testResult.message }}
               <button type="button" class="btn-close" @click="testResult = null"></button>
             </div>
+            <div
+              v-if="dbTestResult"
+              :class="[
+                'alert',
+                dbTestResult.success ? 'alert-success' : 'alert-danger',
+                'alert-dismissible',
+              ]"
+            >
+              {{ dbTestResult.message }}
+              <button type="button" class="btn-close" @click="dbTestResult = null"></button>
+            </div>
             <h5 class="mb-3">Nastavení připojení</h5>
             <form @submit.prevent="saveSettings">
               <div class="mb-3">
@@ -194,18 +205,10 @@
                 >
                   <span v-if="dbTesting" class="spinner-border spinner-border-sm me-1"></span>
                   <i v-else class="bi bi-database me-1"></i>
-                  {{ dbTestResult !== null ? (dbTestResult ? 'DB OK' : 'DB chyba') : 'Test DB' }}
+                  Test DB
                 </button>
                  <!-- Sync & Status Indicator -->
     <div class="ms-3 d-flex align-items-center gap-2">
-      <div 
-        class="status-dot" 
-        :class="storageService.isOnline.value ? 'bg-success' : 'bg-danger'"
-        v-b-tooltip.hover
-        :title="storageService.isOnline.value ? 'Online' : 'Offline - local storage only'"
-        
-      ></div>
-      
       <div v-if="storageService.pendingCount.value > 0" class="sync-indicator d-flex align-items-center gap-1 text-muted small">
         <i class="bi bi-cloud-arrow-up" :class="{ 'syncing-animation': storageService.isSyncing.value }"></i>
         <span>{{ storageService.pendingCount.value }} {{ getPendingText(storageService.pendingCount.value) }}</span>
@@ -342,7 +345,7 @@ async function fetchTranscriptModels() {
 const saveSuccess = ref(false)
 const testing = ref(false)
 const dbTesting = ref(false)
-const dbTestResult = ref<boolean | null>(null)
+const dbTestResult = ref<{ success: boolean; message: string } | null>(null)
 const testResult = ref<{ success: boolean; message: string } | null>(null)
 
 function saveSettings() {
@@ -374,6 +377,7 @@ function saveSettings() {
 async function testConnection() {
   testing.value = true
   testResult.value = null
+  dbTestResult.value = null
 
   try {
     await fetchModels()
@@ -424,22 +428,31 @@ function getPendingText(count: number) {
 async function testDbConnection() {
   dbTesting.value = true
   dbTestResult.value = null
+  testResult.value = null
   try {
-    dbTestResult.value = await storageService.checkDbConnection()
+    const success = await storageService.checkDbConnection()
+    if (success) {
+      dbTestResult.value = {
+        success: true,
+        message: 'Spojení s databází bylo úspěšně navázáno.',
+      }
+    } else {
+      dbTestResult.value = {
+        success: false,
+        message: 'Nepodařilo se navázat spojení s databází. Jste v offline režimu.',
+      }
+    }
   } catch {
-    dbTestResult.value = false
+    dbTestResult.value = {
+      success: false,
+      message: 'Chyba při testování spojení s databází.',
+    }
   } finally {
     dbTesting.value = false
   }
 }
 </script>
 <style>
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
 .syncing-animation {
   animation: sync-spin 2s linear infinite;
 }
