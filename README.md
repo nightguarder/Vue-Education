@@ -68,13 +68,13 @@ To run this platform locally, you will need to set up the following components:
 
 ## Project Setup
 
-### Installation
-
+### Frontend
+1. Install dependencies
 ```sh
 pnpm install
 ```
 
-### Development
+2. Start the development server 
 
 Start the development server with hot-reload:
 
@@ -82,23 +82,20 @@ Start the development server with hot-reload:
 pnpm dev
 ```
 
-### Type-Checking & Production Build
+3. Build for production and launch for production with the build:
 
 ```sh
-pnpm build
+pnpm build && pnpm preview
 ```
 
-### Testing
-
-Run unit tests with Vitest:
+4. Run unit tests with Vitest:
 
 ```sh
 pnpm test:unit
 ```
 
-### Formatting
 
-Format the codebase using the experimental oxfmtr:
+5. Format the codebase using the experimental oxfmtr:
 
 ```sh
 pnpm format
@@ -106,6 +103,27 @@ pnpm format
 
 > [oxfmtr](https://oxc.rs/docs/guide/what-is-oxc.html) Oxidation Compiler is a collection of high-performance tools for JavaScript and TypeScript written in Rust.
 
+### Backend
+
+The backend is a PHP based API that is hosted on a separate server (InfinityFree). The frontend communicates with the backend using RESTful API calls.
+However you can host the backend on localhost as well. 
+
+```sh
+php -S localhost:8000 -t backend/api
+```
+
+### Containers
+backend requires a MySQL database to be running. You can use Docker to run a MySQL container.
+FOr lightweight resources I use [colima](https://colima.run), which runs with sensible defaults without becoming a burden on RAM & CPU. 
+
+1. Start colima isntance
+```sh
+colima start
+```
+2. Docker compose instance
+```sh
+cd backend && docker-compose up -d
+```
 ---
 
 ## Keywords

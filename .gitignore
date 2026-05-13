@@ -39,9 +39,10 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Env
-*.env
-*.env.*
+.env
+backend/**/.env
 !.env.example
+!.env.production
 
 # Debug
 .vscode/launch.json
