@@ -378,6 +378,7 @@ import {
   RESEARCH_SUMMARY_PROMPT, 
 } from '@/services/aiPrompts'
 import { fetchChatCompletion, streamChatCompletion, type ChatMessage as OmlxMessage } from '@/services/omlxApi'
+import { storageService } from '@/services/storageService'
 import { doctorApi } from '@/services/doctorApi'
 import { marked } from 'marked'
 
@@ -668,21 +669,19 @@ function openPublishModal() {
 
 function confirmPublish() {
   const blogPost = {
+    id: Date.now(),
     title: editPost.title,
     content: editPost.content,
     type: 'deep-dive',
-    figures: [...editPost.figures]
+    figures: [...editPost.figures],
+    date: new Date().toISOString(),
   }
 
-  doctorApi.publishBlogPost(blogPost).then(() => {
+  storageService.saveBlogPost(blogPost).then(() => {
     clearDraft()
     showPublishModal.value = false
     alert('Článek byl úspěšně publikován do sekce Novinky z výzkumu!')
-  }).catch((err) => {
-    console.error('[Publish] API failed, saving locally:', err)
-    const existingPosts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
-    existingPosts.unshift({ id: Date.now(), ...blogPost, date: new Date().toISOString() })
-    localStorage.setItem('published_blog_posts', JSON.stringify(existingPosts))
+  }).catch(() => {
     clearDraft()
     showPublishModal.value = false
     alert('Článek uložen lokálně (backend nedostupný).')

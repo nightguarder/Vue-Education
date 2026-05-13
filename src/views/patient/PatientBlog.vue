@@ -11,7 +11,11 @@
           </div>
         </div>
 
-        <div v-if="publishedPosts.length === 0" class="text-center py-5 bg-white rounded-4 shadow-sm">
+        <div v-if="isLoading" class="text-center py-5">
+          <div class="spinner-border text-primary"></div>
+        </div>
+
+        <div v-else-if="publishedPosts.length === 0" class="text-center py-5 bg-white rounded-4 shadow-sm">
           <i class="bi bi-collection display-4 text-muted opacity-25 mb-3"></i>
           <h5>Zatím nebyly publikovány žádné články</h5>
           <p class="text-muted">Lékař zde brzy publikuje nejnovější poznatky z medicínského výzkumu.</p>
@@ -33,7 +37,6 @@
               
               <div class="markdown-content" v-html="renderMarkdown(post.content)"></div>
 
-              <!-- Figures in Blog -->
               <div v-if="post.figures?.length" class="mt-5 border-top pt-4">
                 <h5 class="fw-bold mb-4 text-primary">Obrázky a schémata ze studie</h5>
                 <div class="row g-4">
@@ -60,7 +63,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { doctorApi } from '@/services/doctorApi'
+import { storageService } from '@/services/storageService'
 import { marked } from 'marked'
 
 interface PublishedPost {
@@ -77,18 +80,16 @@ const isLoading = ref(true)
 async function loadPosts() {
   isLoading.value = true
   try {
-    const posts = await doctorApi.getBlogPosts()
+    const posts = await storageService.getBlogPosts()
     publishedPosts.value = posts.map((p: any) => ({
       id: p.id,
       title: p.title,
       content: p.content,
-      date: p.created_at,
-      figures: p.figures || []
+      date: p.created_at || p.date,
+      figures: p.figures || [],
     }))
-  } catch (e) {
-    console.error('Failed to fetch blog posts from API, falling back to localStorage:', e)
-    const posts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
-    publishedPosts.value = posts
+  } catch {
+    publishedPosts.value = []
   } finally {
     isLoading.value = false
   }
@@ -96,9 +97,7 @@ async function loadPosts() {
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('cs-CZ', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
+    day: 'numeric', month: 'long', year: 'numeric',
   })
 }
 
@@ -108,51 +107,22 @@ function renderMarkdown(text: string) {
 
 onMounted(() => {
   loadPosts()
-  
-  // Listen for storage changes in other tabs
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'published_blog_posts') {
-      loadPosts()
-    }
-  })
 })
 </script>
 
 <style scoped lang="scss">
 .blog-card {
   transition: transform 0.3s ease;
-  &:hover {
-    transform: translateY(-5px);
-  }
+  &:hover { transform: translateY(-5px); }
 }
-
 .markdown-content {
-  line-height: 1.8;
-  font-size: 1.1rem;
-  color: #2d3748;
-
+  line-height: 1.8; font-size: 1.1rem; color: #2d3748;
   :deep(h1), :deep(h2), :deep(h3) {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    font-weight: bold;
-    color: var(--bs-primary);
+    margin-top: 2rem; margin-bottom: 1rem; font-weight: bold; color: var(--bs-primary);
   }
-
-  :deep(p) {
-    margin-bottom: 1.25rem;
-  }
-
-  :deep(ul), :deep(ol) {
-    margin-bottom: 1.5rem;
-    padding-left: 1.5rem;
-  }
-
-  :deep(li) {
-    margin-bottom: 0.5rem;
-  }
-
-  :deep(strong) {
-    color: #1a202c;
-  }
+  :deep(p) { margin-bottom: 1.25rem; }
+  :deep(ul), :deep(ol) { margin-bottom: 1.5rem; padding-left: 1.5rem; }
+  :deep(li) { margin-bottom: 0.5rem; }
+  :deep(strong) { color: #1a202c; }
 }
 </style>

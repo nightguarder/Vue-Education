@@ -1,4 +1,7 @@
 // Patient API service - TypeScript version
+import { storageService } from './storageService'
+
+// Patient API service - TypeScript version
 export interface WorksheetField {
   id: string
   type: 'textarea' | 'slider' | 'checkbox'
@@ -41,14 +44,10 @@ export const patientApi = {
    */
   async getPatientData(token: string): Promise<PatientData> {
     try {
-      const response = await fetch(`${API_BASE}/worksheets?patient_id=${token}`)
-      if (!response.ok) throw new Error('Failed to fetch worksheets')
-      const worksheets = await response.json()
-      
+      const worksheets = await storageService.getWorksheets(token)
       return { worksheets: worksheets || [] }
     } catch (e) {
       console.error('[PatientAPI] Fetch error:', e)
-      // Fallback to empty state but could also check localStorage if desired
       return { worksheets: [] }
     }
   },
@@ -57,41 +56,63 @@ export const patientApi = {
    * Submits completed worksheet data
    */
   async submitWorksheet(worksheetData: { patient_id: string; worksheet_id: number; responses: any }): Promise<WorksheetResponse> {
-    const response = await fetch(`${API_BASE}/worksheets/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(worksheetData)
-    })
-    
-    if (!response.ok) throw new Error('Submission failed')
-    return await response.json()
+    try {
+      // Save as a "survey" type for now or we could add a specific method to storageService
+      await storageService.saveSurvey({
+        ...worksheetData,
+        type: 'worksheet_response',
+        created_at: new Date().toISOString()
+      })
+      
+      return {
+        success: true,
+        message: 'Uloženo lokálně (bude synchronizováno)',
+        timestamp: new Date().toISOString()
+      }
+    } catch (e: any) {
+      throw new Error('Nepodařilo se uložit data: ' + e.message)
+    }
   },
 
   /**
    * Submits feedback data (General Survey)
    */
   async submitFeedback(feedbackData: any): Promise<WorksheetResponse> {
-    const response = await fetch(`${API_BASE}/surveys/general`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(feedbackData)
-    })
-    
-    if (!response.ok) throw new Error('Feedback submission failed')
-    return await response.json()
+    try {
+      await storageService.saveSurvey({
+        ...feedbackData,
+        type: 'general_feedback',
+        created_at: new Date().toISOString()
+      })
+      
+      return {
+        success: true,
+        message: 'Zpětná vazba uložena lokálně',
+        timestamp: new Date().toISOString()
+      }
+    } catch (e: any) {
+      throw new Error('Nepodařilo se uložit zpětnou vazbu: ' + e.message)
+    }
   },
 
   /**
    * Submits Personalized Survey
    */
   async submitPersonalizedSurvey(surveyData: any): Promise<WorksheetResponse> {
-    const response = await fetch(`${API_BASE}/surveys/personalized`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(surveyData)
-    })
-    
-    if (!response.ok) throw new Error('Personalized survey submission failed')
-    return await response.json()
+    try {
+      await storageService.saveSurvey({
+        ...surveyData,
+        type: 'personalized_survey',
+        created_at: new Date().toISOString()
+      })
+      
+      return {
+        success: true,
+        message: 'Průzkum uložen lokálně',
+        timestamp: new Date().toISOString()
+      }
+    } catch (e: any) {
+      throw new Error('Nepodařilo se uložit průzkum: ' + e.message)
+    }
   }
 }

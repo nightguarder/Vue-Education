@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { doctorApi } from '@/services/doctorApi'
+import { storageService } from '@/services/storageService'
 
 export function useSurvey() {
   const surveys = ref<any[]>([])
@@ -10,10 +10,9 @@ export function useSurvey() {
     isLoading.value = true
     error.value = null
     try {
-      surveys.value = await doctorApi.getSurveys()
+      surveys.value = await storageService.getSurveys()
     } catch (e: any) {
       error.value = e.message || 'Nepodařilo se načíst průzkumy'
-      console.error('[useSurvey] Fetch failed:', e)
     } finally {
       isLoading.value = false
     }
@@ -21,7 +20,6 @@ export function useSurvey() {
 
   const getSurveysByPatient = (patientId: string) => {
     return computed(() => {
-      // Handle the case where patientId might be prefixed with PAT-
       const shortId = patientId.includes('-') ? patientId.split('-')[1] : patientId
       return surveys.value.filter(s => {
         const sPatId = s.patient_id || ''
@@ -46,6 +44,6 @@ export function useSurvey() {
     error,
     fetchSurveys,
     getSurveysByPatient,
-    getSurveysBySession
+    getSurveysBySession,
   }
 }

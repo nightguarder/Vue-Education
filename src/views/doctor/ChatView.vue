@@ -267,6 +267,25 @@
                 </div>
               </div>
 
+              <!-- Session Worksheets -->
+              <div class="context-section mb-4">
+                <h6 class="fw-bold small text-muted text-uppercase mb-2 tracking-wider">
+                  Pracovní listy
+                </h6>
+                <div v-if="currentSessionWorksheets.length > 0" class="list-group list-group-flush border rounded-4 overflow-hidden shadow-sm bg-white">
+                  <div v-for="ws in currentSessionWorksheets" :key="ws.id" class="list-group-item p-2 small">
+                    <div class="d-flex justify-content-between">
+                      <span class="fw-bold text-success">Pracovní list</span>
+                      <span class="text-muted">{{ formatDate(ws.created_at || ws.createdAt) }}</span>
+                    </div>
+                    <div class="truncate-1 opacity-75">{{ ws.content?.title || 'Sledování' }}</div>
+                  </div>
+                </div>
+                <div v-else class="p-3 bg-light rounded-4 text-center border-dashed">
+                  <small class="text-muted">Žádné pracovní listy k tomuto sezení.</small>
+                </div>
+              </div>
+
               <!-- Transcript/Summary section -->
               <div class="context-section">
                 <div class="nav nav-pills mb-3 bg-light p-1 rounded-pill" style="font-size: 0.8rem">
@@ -305,6 +324,10 @@
                           Generovat pracovní list (Léky)
                         </button>
                       </div>
+                    </div>
+                    <div v-else-if="isAnalyzing && streamingSummary" class="fade-in">
+                      <div class="markdown-content text-dark-50 d-inline" v-html="renderMarkdown(streamingSummary)"></div>
+                      <span class="blinking-cursor text-primary ms-1">|</span>
                     </div>
                     <div v-else class="text-center py-5 text-muted">
                       <i class="bi bi-stars display-6 mb-2 opacity-25"></i>
@@ -441,14 +464,17 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getSummaryAnalysisPrompt, getChatSystemMessage, getMedicationTrackerPrompt } from '@/services/aiPrompts'
+import { getSummaryAnalysisPrompt, getChatSystemMessage, getBriefChatSystemMessage, getMedicationTrackerPrompt } from '@/services/aiPrompts'
+import { storageService } from '@/services/storageService'
 import { doctorApi, type ClinicalSession } from '@/services/doctorApi'
+import { useClinicalData } from '@/composables/useClinicalData'
 import SurveyQRCode from '@/components/SurveyQRCode.vue'
 import { useSurvey } from '@/composables/useSurvey'
 import { Marked } from 'marked'
 
 const route = useRoute()
 const router = useRouter()
+const { startNewSession, saveSession, fetchPatients, fetchSessions, fetchWorksheets, createWorksheet } = useClinicalData()
 
 // Survey logic
 const { fetchSurveys, getSurveysBySession } = useSurvey()
@@ -492,6 +518,16 @@ const showChatList = ref(true)
 const showQrModal = ref(false)
 const showNewSessionModal = ref(false)
 const streamingContent = ref('')
+const streamingSummary = ref('')
+
+function getModelSettings() {
+  return {
+    chatMaxTokens: parseInt(localStorage.getItem('omlx_chat_max_tokens') || '1024'),
+    summaryMaxTokens: parseInt(localStorage.getItem('omlx_summary_max_tokens') || '2048'),
+    temperature: parseFloat(localStorage.getItem('omlx_temperature') || '0.7'),
+    systemPrompt: localStorage.getItem('omlx_chat_system_prompt') || '',
+  }
+}
 
 const newSessionData = reactive({
   name: '',
@@ -513,10 +549,83 @@ const currentSessionSurveys = computed(() => {
   return getSurveysBySession(currentChat.value.chatId).value
 })
 
+const currentSessionWorksheets = ref<any[]>([])
+
+function createNewSession() {
+  storageService.getPatients().then(pts => {
+    existingPatients.value = pts
+  })
+  showNewSessionModal.value = true
+}
+
+async function confirmNewSession() {
+  let name = ''
+  let patId = ''
+  let age: number | undefined
+  let gender: string | undefined
+
+  if (newSessionData.isExisting) {
+    const p = existingPatients.value.find(p => p.patient_id === newSessionData.patientId)
+    if (!p) return
+    name = p.name
+    patId = p.patient_id
+    age = p.age
+    gender = p.gender
+  } else {
+    if (!newSessionData.name) return
+    name = newSessionData.name
+    age = newSessionData.age ?? undefined
+    gender = newSessionData.gender || undefined
+    patId = `PAT-${Math.random().toString(36).substring(2, 7)}`
+    await storageService.savePatient({
+      patient_id: patId,
+      name,
+      age,
+      gender,
+      doctor_id: 'DOC-default',
+    })
+  }
+
+  const newChatId = `SES-${Math.random().toString(36).substring(2, 7)}`
+  const now = new Date().toISOString()
+
+  const newChat: Chat = {
+    chatId: newChatId,
+    patientId: patId,
+    patientName: name,
+    patientAge: age,
+    patientGender: gender,
+    createdAt: now,
+    lastActivity: now,
+    messages: [],
+  }
+
+  chats.value.unshift(newChat)
+  selectChat(newChatId)
+  await saveChat(newChat)
+
+  newSessionData.name = ''
+  newSessionData.age = null
+  newSessionData.gender = ''
+  newSessionData.patientId = ''
+  newSessionData.isExisting = false
+  showNewSessionModal.value = false
+}
+
+async function loadSessionWorksheets() {
+  if (!currentChat.value) return
+  try {
+    const all = await fetchWorksheets(currentChat.value.patientId)
+    currentSessionWorksheets.value = all.filter((ws: any) => ws.session_id === currentChat.value?.chatId)
+  } catch (e) {
+    currentSessionWorksheets.value = []
+  }
+}
+
 async function loadChats() {
   isLoading.value = true
   try {
-    const sessions = await doctorApi.getSessions()
+    const sessions = await storageService.getSessions()
     chats.value = sessions.map(s => {
       const analysis = typeof s.ai_analysis === 'string' ? JSON.parse(s.ai_analysis) : s.ai_analysis
       return {
@@ -534,106 +643,43 @@ async function loadChats() {
       }
     })
   } catch (e) {
-    console.error('[Chat] Failed to load from API, falling back to localStorage:', e)
-    const stored = localStorage.getItem('doctor_chats')
-    chats.value = stored ? JSON.parse(stored) : []
-  } finally {
-    isLoading.value = false
+    console.debug('[Chat] Failed to load chats:', (e as Error)?.message)
   }
-}
-
-async function saveChat(chat: Chat) {
-  try {
-    const session: ClinicalSession = {
-      session_id: chat.chatId,
-      patient_id: chat.patientId,
-      doctor_id: 'DOC-default',
-      clinic_id: 'CLI-default',
-      transcript: chat.transcript,
-      ai_analysis: {
-        patientName: chat.patientName,
-        patientAge: chat.patientAge,
-        patientGender: chat.patientGender,
-        patientNotes: chat.patientNotes,
-        aiSummary: chat.aiSummary,
-        lastActivity: chat.lastActivity,
-        messages: chat.messages
-      }
-    }
-    await doctorApi.saveSession(session)
-  } catch (e) {
-    console.error('[Chat] API save failed, saving to localStorage:', e)
-    localStorage.setItem('doctor_chats', JSON.stringify(chats.value))
-  }
-}
-
-function selectChat(chatId: string) {
-  currentChatId.value = chatId
-  router.replace(`/doctor/chat/${chatId}`)
-  nextTick(scrollToBottom)
-  fetchSurveys() // Refresh surveys when selecting a chat
-}
-
-function createNewSession() {
-  existingPatients.value = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
-  showNewSessionModal.value = true
-}
-
-function confirmNewSession() {
-  let name = ''
-  let patId = ''
-  let age: number | undefined
-  let gender: string | undefined
-  
-  if (newSessionData.isExisting) {
-    const p = existingPatients.value.find(p => p.id === newSessionData.patientId)
-    if (!p) return
-    name = p.name
-    patId = p.id
-    age = p.age
-    gender = p.gender
-  } else {
-    if (!newSessionData.name) return
-    name = newSessionData.name
-    age = newSessionData.age ?? undefined
-    gender = newSessionData.gender || undefined
-    patId = `PAT-${Math.random().toString(36).substring(2, 7)}`
-    
-    // Auto-save new patient to registry
-    const stored = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
-    stored.unshift({ id: patId, name, age, gender, createdAt: new Date().toISOString() })
-    localStorage.setItem('doctor_patients', JSON.stringify(stored))
-  }
-
-  const newChatId = `SES-${Math.random().toString(36).substring(2, 7)}`
-  const now = new Date().toISOString()
-
-  const newChat: Chat = {
-    chatId: newChatId,
-    patientId: patId,
-    patientName: name,
-    patientAge: age,
-    patientGender: gender,
-    createdAt: now,
-    lastActivity: now,
-    messages: []
-  }
-
-  chats.value.unshift(newChat)
-  selectChat(newChatId)
-  saveChat(newChat)
-  
-  // Reset form
-  newSessionData.name = ''
-  newSessionData.age = null
-  newSessionData.gender = ''
-  newSessionData.patientId = ''
-  newSessionData.isExisting = false
 }
 
 function scrollToBottom() {
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    const el = messagesContainer.value
+    const threshold = 100
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+    if (isNearBottom) {
+      el.scrollTop = el.scrollHeight
+    }
+  }
+}
+
+async function saveChat(chat: Chat) {
+  const session: ClinicalSession = {
+    session_id: chat.chatId,
+    patient_id: chat.patientId,
+    doctor_id: 'DOC-default',
+    clinic_id: 'CLI-default',
+    transcript: chat.transcript,
+    status: 'active',
+    ai_analysis: {
+      patientName: chat.patientName,
+      patientAge: chat.patientAge,
+      patientGender: chat.patientGender,
+      patientNotes: chat.patientNotes,
+      aiSummary: chat.aiSummary,
+      lastActivity: chat.lastActivity,
+      messages: chat.messages,
+    },
+  }
+  try {
+    await storageService.saveSession(session)
+  } catch {
+    // Best-effort — storageService handles local persistence
   }
 }
 
@@ -735,7 +781,7 @@ async function generateWorksheet() {
         })
       }
 
-      await doctorApi.createWorksheet({
+      await createWorksheet({
         patient_id: currentChat.value.patientId,
         session_id: currentChat.value.chatId,
         content: {
@@ -745,7 +791,7 @@ async function generateWorksheet() {
         }
       })
 
-      alert('Pracovní list byl úspěšně vygenerován a odeslán pacientovi.')
+      alert('Pracovní list byl úspěšně vygenerován.')
     }
   } catch (e: any) {
     console.error('[Chat] Worksheet generation failed:', e)
@@ -759,10 +805,10 @@ async function generateSummary() {
   if (!currentChat.value || !currentChat.value.transcript || isAnalyzing.value) return
 
   isAnalyzing.value = true
+  streamingSummary.value = ''
 
   try {
     const transcript = currentChat.value.transcript
-
     const prompt = getSummaryAnalysisPrompt(transcript)
 
     const response = await fetch('/omlx/chat/completions', {
@@ -777,28 +823,56 @@ async function generateSummary() {
           {
             role: 'system',
             content:
-              'Jsi zkušený klinický asistent. Tvým úkolem je analyzovat přepisy lékařských konzultací.',
+              getModelSettings().systemPrompt || 'Jsi zkušený klinický asistent. Tvým úkolem je analyzovat přepisy lékařských konzultací.',
           },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 1000,
-        temperature: 0.3,
+        max_tokens: getModelSettings().summaryMaxTokens,
+        temperature: getModelSettings().temperature,
+        stream: true,
         stop: ['<end_of_turn>'],
       }),
     })
 
-    if (response.ok) {
-      const data = await response.json()
-      const content = data.choices?.[0]?.message?.content || 'Shrnutí se nepodařilo vygenerovat.'
-      const summary = content.split('<end_of_turn>')[0].trim()
+    if (!response.ok) throw new Error(`API failed: ${response.status}`)
 
-      currentChat.value.aiSummary = summary
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No reader')
+
+    const decoder = new TextDecoder()
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value, { stream: true })
+      const lines = chunk.split('\n')
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const dataStr = line.slice(6).trim()
+          if (dataStr === '[DONE]') break
+
+          try {
+            const data = JSON.parse(dataStr)
+            const content = data.choices?.[0]?.delta?.content || ''
+            streamingSummary.value += content
+          } catch (e) {
+            // Partial JSON
+          }
+        }
+      }
+    }
+
+    if (streamingSummary.value) {
+      currentChat.value.aiSummary = streamingSummary.value
       await saveChat(currentChat.value)
     }
   } catch (e) {
     console.error('[Chat] Summary generation failed:', e)
   } finally {
     isAnalyzing.value = false
+    streamingSummary.value = ''
   }
 }
 
@@ -808,14 +882,27 @@ async function sendToOmlx() {
   isSending.value = true
 
   try {
-    // Build system message with full patient context (sent each request for stateless API)
-    const systemMessage = getChatSystemMessage({
-      patientName: currentChat.value.patientName,
-      patientAge: currentChat.value.patientAge,
-      patientGender: currentChat.value.patientGender,
-      aiSummary: currentChat.value.aiSummary,
-      transcript: currentChat.value.transcript,
-    })
+    // Full context (transcript + summary) on first exchange, summary on subsequent
+    const isFirstExchange = currentChat.value.messages.length <= 1
+    const settings = getModelSettings()
+    const baseMessage = isFirstExchange
+      ? getChatSystemMessage({
+          patientName: currentChat.value.patientName,
+          patientAge: currentChat.value.patientAge,
+          patientGender: currentChat.value.patientGender,
+          aiSummary: currentChat.value.aiSummary,
+          transcript: currentChat.value.transcript,
+        })
+      : getBriefChatSystemMessage({
+          patientName: currentChat.value.patientName,
+          patientAge: currentChat.value.patientAge,
+          patientGender: currentChat.value.patientGender,
+          aiSummary: currentChat.value.aiSummary,
+        })
+
+    const systemMessage = settings.systemPrompt
+      ? settings.systemPrompt + '\n\n' + baseMessage
+      : baseMessage
 
     // Send last 10 messages for conversation continuity
     const historyMessages = currentChat.value.messages.slice(-10).map((m) => ({
@@ -832,8 +919,8 @@ async function sendToOmlx() {
       body: JSON.stringify({
         model: 'gemma-4-e4b-it-OptiQ-4bit',
         messages: [{ role: 'system', content: systemMessage }, ...historyMessages],
-        max_tokens: 500,
-        temperature: 0.7,
+        max_tokens: getModelSettings().chatMaxTokens,
+        temperature: getModelSettings().temperature,
         stream: true,
         stop: ['<end_of_turn>'],
       }),
@@ -892,10 +979,9 @@ async function sendToOmlx() {
 }
 
 function clearAllChats() {
-  if (!confirm('Smazat všechny lokální chaty? Pozor: Chaty v databázi zůstanou zachovány.')) return
+  if (!confirm('Tato akce skryje chaty v tomto zobrazení. Chaty v databázi zůstanou zachovány.')) return
   chats.value = []
   currentChatId.value = null
-  localStorage.removeItem('doctor_chats')
   router.replace('/doctor/chat')
 }
 
@@ -942,9 +1028,18 @@ function formatTime(timestamp: string): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function selectChat(chatId: string) {
+  currentChatId.value = chatId
+  router.replace(`/doctor/chat/${chatId}`)
+  nextTick(scrollToBottom)
+  fetchSurveys()
+  nextTick(loadSessionWorksheets)
+}
+
 onMounted(() => {
   loadChats()
   fetchSurveys()
+  storageService.syncAll() // Background sync
   const chatId = route.params.chatId as string
   if (chatId) {
     currentChatId.value = chatId
@@ -1076,6 +1171,7 @@ watch(
 .truncate-1 {
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

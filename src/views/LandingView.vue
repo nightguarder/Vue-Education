@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { storageService } from '@/services/storageService'
 import { doctorApi } from '@/services/doctorApi'
 import { useStressReliefAI } from '@/composables/useStressReliefAI'
 
@@ -15,20 +16,24 @@ const isAiQuote = ref(false)
 const downloadAllowed = ref(true)
 
 onMounted(async () => {
-  // Stats from localStorage
-  const chats = JSON.parse(localStorage.getItem('doctor_chats') || '[]')
-  const patients = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
-  totalSessions.value = chats.length
-  totalPatients.value = patients.length
-
-  // Blog posts from API, fallback to localStorage
+  // Stats from storageService (unified API/local)
   try {
-    const posts = await doctorApi.getBlogPosts()
-    totalBlogPosts.value = posts.length
+    const [sessions, patients] = await Promise.all([
+      storageService.getSessions(),
+      storageService.getPatients()
+    ])
+    totalSessions.value = sessions.length
+    totalPatients.value = patients.length
   } catch (e) {
-    console.error('Failed to fetch blog posts from API:', e)
-    const posts = JSON.parse(localStorage.getItem('published_blog_posts') || '[]')
+    console.error('Failed to fetch stats:', e)
+  }
+
+  // Blog posts from storageService (local first)
+  try {
+    const posts = await storageService.getBlogPosts()
     totalBlogPosts.value = posts.length
+  } catch {
+    totalBlogPosts.value = 0
   }
 
   isLoading.value = false

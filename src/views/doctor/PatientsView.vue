@@ -26,9 +26,9 @@
             <div class="list-group list-group-flush">
               <button 
                 v-for="patient in filteredPatients" 
-                :key="patient.id"
+                :key="patient.patient_id"
                 class="list-group-item list-group-item-action border-0 py-3 px-4 d-flex align-items-center gap-3"
-                :class="{ 'active-patient bg-primary bg-opacity-10 border-start border-4 border-primary': selectedPatient?.id === patient.id }"
+                :class="{ 'active-patient bg-primary bg-opacity-10 border-start border-4 border-primary': selectedPatient?.patient_id === patient.patient_id }"
                 @click="selectedPatient = patient"
               >
                 <div class="avatar bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold" style="width: 40px; height: 40px;">
@@ -55,7 +55,7 @@
           <div class="card-header bg-white py-4 px-4 border-bottom d-flex align-items-center justify-content-between">
             <div>
               <h3 class="fw-bold mb-1 text-dark">{{ selectedPatient.name }}</h3>
-              <p class="text-muted mb-0">ID: {{ selectedPatient.id }} • {{ selectedPatient.email }}</p>
+              <p class="text-muted mb-0">ID: {{ selectedPatient.patient_id }} • {{ selectedPatient.email }}</p>
             </div>
             <div class="btn-group rounded-pill overflow-hidden border">
               <button class="btn btn-outline-primary px-4 py-2" :class="{ active: activeTab === 'info' }" @click="activeTab = 'info'">Informace</button>
@@ -97,8 +97,8 @@
                   </thead>
                   <tbody>
                     <tr v-for="session in patientSessions" :key="session.id">
-                      <td class="fw-bold">{{ formatDate(session.created_at) }}</td>
-                      <td><span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3">{{ session.type || 'Konzultace' }}</span></td>
+                      <td class="fw-bold">{{ formatDate(session.created_at || '') }}</td>
+                      <td><span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3">{{ session.status === 'active' ? 'Aktivní' : 'Konzultace' }}</span></td>
                       <td><span class="badge" :class="statusClass(session.status)">{{ session.status }}</span></td>
                       <td><button class="btn btn-sm btn-outline-primary rounded-pill px-3" @click="viewSession(session)">Detail</button></td>
                     </tr>
@@ -145,7 +145,7 @@
               <div class="row g-4">
                 <div class="col-md-5">
                   <SurveyQRCode 
-                    :patientId="selectedPatient.id" 
+                    :patientId="selectedPatient.patient_id" 
                     :patientName="selectedPatient.name"
                     :doctorId="'DOC-default'"
                     sessionId="GEN-INTAKE"
@@ -231,22 +231,19 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import SurveyQRCode from '@/components/SurveyQRCode.vue'
 import { useSurvey } from '@/composables/useSurvey'
+import { storageService } from '@/services/storageService'
+import { useClinicalData } from '@/composables/useClinicalData'
+import { doctorApi, type Patient, type ClinicalSession } from '@/services/doctorApi'
 
-interface Patient {
-  id: string
-  name: string
-  age: number
-  gender: string
-  email: string
-  phone?: string
-  notes?: string
-}
+const router = useRouter()
+const { createPatient, fetchPatients, fetchSessions, fetchWorksheets, createWorksheet, deleteWorksheet: deleteWs } = useClinicalData()
 
 interface Worksheet {
   id: string
-  patientId: string
+  patient_id: string
   title: string
   description: string
   completed: boolean
@@ -259,13 +256,14 @@ const selectedPatient = ref<Patient | null>(null)
 const activeTab = ref('info')
 const patients = ref<Patient[]>([])
 const worksheets = ref<Worksheet[]>([])
-const sessions = ref<any[]>([])
+const sessions = ref<ClinicalSession[]>([])
+const isLoading = ref(false)
 
 // Survey logic
 const { fetchSurveys, getSurveysByPatient, isLoading: isLoadingSurveys } = useSurvey()
 const patientSurveys = computed(() => {
   if (!selectedPatient.value) return []
-  return getSurveysByPatient(selectedPatient.value.id).value
+  return getSurveysByPatient(selectedPatient.value.patient_id).value
 })
 
 // Modal State
@@ -287,58 +285,72 @@ const filteredPatients = computed(() => {
 
 const patientWorksheets = computed(() => {
   if (!selectedPatient.value) return []
-  return worksheets.value.filter(ws => ws.patientId === selectedPatient.value?.id)
+  return worksheets.value.filter(ws => ws.patient_id === selectedPatient.value?.patient_id)
 })
 
 const patientSessions = computed(() => {
   if (!selectedPatient.value) return []
-  return sessions.value.filter(s => s.patient_id === selectedPatient.value?.id)
+  return sessions.value.filter(s => s.patient_id === selectedPatient.value?.patient_id)
 })
 
 // Actions
-function loadData() {
-  patients.value = JSON.parse(localStorage.getItem('doctor_patients') || '[]')
-  worksheets.value = JSON.parse(localStorage.getItem('doctor_worksheets') || '[]')
-  sessions.value = JSON.parse(localStorage.getItem('published_sessions') || '[]') // Simplified proxy
-  
-  // Seed initial data if empty
-  if (patients.value.length === 0) {
-    patients.value = [
-      { id: '1', name: 'Anna Nováková', age: 24, gender: 'Žena', email: 'anna@example.com', notes: 'Úzkostná porucha, panic attacks.' },
-      { id: '2', name: 'Jan Svoboda', age: 32, gender: 'Muž', email: 'jan@example.com', notes: 'Depresivní epizoda, nespavost.' }
-    ]
-    savePatients()
+async function loadData() {
+  isLoading.value = true
+  try {
+    const [pts, sess, ws] = await Promise.all([
+      fetchPatients(),
+      fetchSessions(),
+      fetchWorksheets()
+    ])
+    patients.value = pts
+    sessions.value = sess
+    worksheets.value = ws
+  } catch (e) {
+    console.debug('[Patients] Load failed (DB may be unavailable):', (e as Error)?.message)
+  } finally {
+    isLoading.value = false
   }
 }
 
-function savePatients() {
-  localStorage.setItem('doctor_patients', JSON.stringify(patients.value))
-}
-
-function saveWorksheets() {
-  localStorage.setItem('doctor_worksheets', JSON.stringify(worksheets.value))
-}
-
-function addPatient() {
+async function addPatient() {
   if (!newPatient.name) return
-  const id = Math.random().toString(36).substring(2, 9)
-  patients.value.unshift({ id: `PAT-${id}`, ...newPatient })
-  savePatients()
-  showAddPatientModal.value = false
-  // Reset
-  newPatient.name = ''
-  newPatient.email = ''
-  newPatient.notes = ''
+  try {
+    await createPatient({ ...newPatient })
+    showAddPatientModal.value = false
+    newPatient.name = ''
+    newPatient.age = 25
+    newPatient.email = ''
+    newPatient.notes = ''
+    await loadData()
+  } catch (e) {
+    console.debug('[Patients] Add failed (DB may be unavailable):', (e as Error)?.message)
+  }
 }
 
-function openCreateWorksheet() {
-  alert('Funkce generování pracovních listů se připravuje.')
+async function openCreateWorksheet() {
+  if (!selectedPatient.value) return
+  const title = prompt('Název pracovního listu:')
+  if (!title) return
+  try {
+    await createWorksheet({
+      patient_id: selectedPatient.value.patient_id,
+      session_id: 'MANUAL',
+      content: { title, fields: [] }
+    })
+    await loadData()
+  } catch (e) {
+    console.debug('[Patients] Create worksheet failed:', (e as Error)?.message)
+  }
 }
 
-function deleteWorksheet(id: string) {
-  if (confirm('Opravdu chcete tento pracovní list smazat?')) {
-    worksheets.value = worksheets.value.filter(ws => ws.id !== id)
-    saveWorksheets()
+async function deleteWorksheet(id: string) {
+  if (confirm('Opravdu chcete smazat tento pracovní list?')) {
+    try {
+      await deleteWs(id)
+      await loadData()
+    } catch (e) {
+      console.debug('[Patients] Delete worksheet failed:', (e as Error)?.message)
+    }
   }
 }
 
@@ -347,14 +359,14 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('cs-CZ')
 }
 
-function statusClass(status: string) {
+function statusClass(status: string | undefined) {
   if (status === 'completed') return 'bg-success'
   if (status === 'pending') return 'bg-warning text-dark'
   return 'bg-primary'
 }
 
 function viewSession(session: any) {
-  console.log('Viewing session:', session)
+  router.push(`/doctor/chat/${session.session_id}`)
 }
 
 function viewWorksheet(ws: Worksheet) {
@@ -368,6 +380,7 @@ function truncate(text: string, len: number) {
 onMounted(() => {
   loadData()
   fetchSurveys()
+  storageService.syncAll() // Background sync
 })
 
 // Refresh surveys when tab changes to surveys

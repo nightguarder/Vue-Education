@@ -67,7 +67,7 @@ import {
   BNavbarBrand,
   BNavItemDropdown,
   BDropdownItem,
-  BDropdownDivider,
+  BDropdownDivider
 } from 'bootstrap-vue-next'
 </script>
 

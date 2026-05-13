@@ -45,7 +45,7 @@
                     }"
                   >
                     <span class="day-number">{{ day.date }}</span>
-                    <div v-if="day.vacation" class="vacation-indicator">
+                    <div v-if="day.isVacation" class="vacation-indicator">
                       <i class="bi bi-sun"></i>
                     </div>
                   </div>
@@ -164,6 +164,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { storageService } from '@/services/storageService'
 import { doctorApi } from '@/services/doctorApi'
 
 interface Vacation {
@@ -191,6 +192,7 @@ const vacations = ref<Vacation[]>([])
 
 onMounted(async () => {
   await loadVacationData()
+  storageService.syncAll()
 })
 
 async function loadVacationData() {
@@ -201,7 +203,7 @@ async function loadVacationData() {
       totalVacationDays.value = settings.total_days || 25
     }
 
-    const data = await doctorApi.getVacations()
+    const data = await storageService.getVacations()
     vacations.value = data.map((v: any) => ({
       id: v.id,
       start_date: v.start_date,
@@ -212,11 +214,6 @@ async function loadVacationData() {
     usedVacationDays.value = vacations.value.reduce((sum, v) => sum + v.days, 0)
   } catch (e) {
     console.error('Failed to load vacation data:', e)
-    const stored = localStorage.getItem('doctor_vacations')
-    if (stored) {
-      vacations.value = JSON.parse(stored)
-      usedVacationDays.value = vacations.value.reduce((sum, v) => sum + v.days, 0)
-    }
   } finally {
     isLoading.value = false
   }
@@ -316,7 +313,7 @@ async function addVacation() {
   const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
   
   try {
-    const result = await doctorApi.addVacation({
+    const result = await storageService.addVacation({
       doctor_id: 'DOC-default',
       start_date: newVacation.value.start,
       end_date: newVacation.value.end,
@@ -333,14 +330,6 @@ async function addVacation() {
     usedVacationDays.value += days
   } catch (e) {
     console.error('Failed to add vacation:', e)
-    vacations.value.push({
-      id: Date.now(),
-      start_date: newVacation.value.start,
-      end_date: newVacation.value.end,
-      reason: newVacation.value.reason,
-      days
-    })
-    usedVacationDays.value += days
   }
   
   newVacation.value = { start: '', end: '', reason: 'vacation' }
