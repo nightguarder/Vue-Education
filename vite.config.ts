@@ -8,6 +8,7 @@ import { BootstrapVueNextResolver } from 'bootstrap-vue-next/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [
     vue(),
     vueDevTools(),
@@ -30,35 +31,43 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-server: {
+  server: {
     proxy: {
       '/omlx': {
         target: `http://127.0.0.1:${process.env.VITE_OMLX_PORT || '8888'}`,
         changeOrigin: true,
         rewrite: (path) => {
-          // Don't rewrite audio endpoints
           if (path.includes('/audio/')) {
             return path.replace(/^\/omlx/, '')
           }
           return path.replace(/^\/omlx/, '/v1')
         },
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.log('[OMLX Proxy Error]', err.message)
-          })
-        }
       },
       '/api': {
         target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
-      }
+      },
     }
   },
   build: {
+    outDir: 'dist',
+    emptyOutDir: true,
     rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        sw: fileURLToPath(new URL('./src/sw.ts', import.meta.url)),
+      },
+      output: {
+        // Keep sw.js at the root, everything else in assets/
+        entryFileNames: (chunk) => {
+          if (chunk.name === 'sw') return 'sw.js'
+          return 'assets/[name]-[hash].js'
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
       plugins: [
-        /* Automatic build-time manifest */
         {
           name: 'build-manifest',
           generateBundle(options, bundle) {
@@ -73,20 +82,10 @@ server: {
               type: 'asset',
               fileName: 'cache-manifest.json',
               source: JSON.stringify(manifest),
-              name: 'cache-manifest.json',
             })
           },
         },
       ],
-      input: {
-        main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        sw: fileURLToPath(new URL('./src/sw.ts', import.meta.url)),
-      },
-      output: {
-        entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'sw' ? '[name].js' : 'assets/[name]-[hash].js'
-        },
-      },
     },
   },
 })

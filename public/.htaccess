@@ -23,3 +23,7 @@
   # Otherwise, send everything else to index.html for Vue Router
   RewriteRule ^ index.html [L]
 </IfModule>
+
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>

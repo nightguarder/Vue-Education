@@ -92,6 +92,9 @@
               </div>
               <h5 class="fw-bold">Vyberte klinické sezení</h5>
               <p class="text-muted">Vyberte pacienta z levého panelu pro zahájení analýzy</p>
+              <button class="btn btn-primary rounded-pill px-4 mt-3" @click="createNewSession">
+                <i class="bi bi-plus-lg me-2"></i>Nové rychlé sezení
+              </button>
             </div>
           </div>
 
@@ -222,9 +225,14 @@
             <div class="card-body pt-0">
               <!-- Profile Info -->
               <div class="context-section mb-4 p-3 bg-primary bg-opacity-10 rounded-4">
-                <div class="d-flex align-items-center mb-3 text-primary">
-                  <i class="bi bi-person-badge me-2 h5 mb-0"></i>
-                  <h6 class="mb-0 fw-bold">Demografie</h6>
+                <div class="d-flex align-items-center justify-content-between mb-3 text-primary">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-person-badge me-2 h5 mb-0"></i>
+                    <h6 class="mb-0 fw-bold">Demografie</h6>
+                  </div>
+                  <button class="btn btn-sm btn-link p-0 text-primary" @click="showQrModal = true" title="Show Survey QR">
+                    <i class="bi bi-qr-code"></i>
+                  </button>
                 </div>
                 <div class="row g-2">
                   <div class="col-6">
@@ -237,6 +245,44 @@
                       currentChat.patientGender || 'N/A'
                     }}</span>
                   </div>
+                </div>
+              </div>
+
+              <!-- Survey Status section -->
+              <div class="context-section mb-4">
+                <h6 class="fw-bold small text-muted text-uppercase mb-2 tracking-wider">
+                  Průzkumy pacienta
+                </h6>
+                <div v-if="currentSessionSurveys.length > 0" class="list-group list-group-flush border rounded-4 overflow-hidden shadow-sm bg-white">
+                  <div v-for="s in currentSessionSurveys" :key="s.id" class="list-group-item p-2 small">
+                    <div class="d-flex justify-content-between">
+                      <span class="fw-bold text-primary">Vstupní dotazník</span>
+                      <span class="text-muted">{{ formatDate(s.created_at) }}</span>
+                    </div>
+                    <div class="truncate-1 opacity-75">{{ s.comments || 'Bez komentáře' }}</div>
+                  </div>
+                </div>
+                <div v-else class="p-3 bg-light rounded-4 text-center border-dashed">
+                  <small class="text-muted">Žádný vyplněný dotazník k tomuto sezení.</small>
+                </div>
+              </div>
+
+              <!-- Session Worksheets -->
+              <div class="context-section mb-4">
+                <h6 class="fw-bold small text-muted text-uppercase mb-2 tracking-wider">
+                  Pracovní listy
+                </h6>
+                <div v-if="currentSessionWorksheets.length > 0" class="list-group list-group-flush border rounded-4 overflow-hidden shadow-sm bg-white">
+                  <div v-for="ws in currentSessionWorksheets" :key="ws.id" class="list-group-item p-2 small">
+                    <div class="d-flex justify-content-between">
+                      <span class="fw-bold text-success">Pracovní list</span>
+                      <span class="text-muted">{{ formatDate(ws.created_at || ws.createdAt) }}</span>
+                    </div>
+                    <div class="truncate-1 opacity-75">{{ ws.content?.title || 'Sledování' }}</div>
+                  </div>
+                </div>
+                <div v-else class="p-3 bg-light rounded-4 text-center border-dashed">
+                  <small class="text-muted">Žádné pracovní listy k tomuto sezení.</small>
                 </div>
               </div>
 
@@ -279,6 +325,10 @@
                         </button>
                       </div>
                     </div>
+                    <div v-else-if="isAnalyzing && streamingSummary" class="fade-in">
+                      <div class="markdown-content text-dark-50 d-inline" v-html="renderMarkdown(streamingSummary)"></div>
+                      <span class="blinking-cursor text-primary ms-1">|</span>
+                    </div>
                     <div v-else class="text-center py-5 text-muted">
                       <i class="bi bi-stars display-6 mb-2 opacity-25"></i>
                       <p class="small mb-0">Žádné shrnutí není k dispozici.</p>
@@ -301,9 +351,15 @@
                     <div v-if="currentChat.transcript">
                       <div class="markdown-content text-dark-50" v-html="renderMarkdown(currentChat.transcript)"></div>
                     </div>
-                    <div v-else class="text-center py-5 text-muted">
+                    <div v-else class="text-center py-4 text-muted">
                       <i class="bi bi-mic-mute display-6 mb-2 opacity-25"></i>
                       <p class="small mb-0">Žádný přepis není k dispozici.</p>
+                      <router-link
+                        :to="`/doctor/transcription?chatId=${currentChat.chatId}&patientName=${encodeURIComponent(currentChat.patientName)}&patientAge=${currentChat.patientAge || ''}&patientGender=${encodeURIComponent(currentChat.patientGender || '')}&patientNotes=${encodeURIComponent(currentChat.patientNotes || '')}`"
+                        class="btn btn-sm btn-outline-primary mt-3 rounded-pill"
+                      >
+                        <i class="bi bi-mic me-1"></i>Nahrát přepis
+                      </router-link>
                     </div>
                   </template>
                 </div>
@@ -362,18 +418,66 @@
     </div>
   </div>
 
+  <!-- New Session Modal -->
+  <BModal v-model="showNewSessionModal" title="Zahájit nové sezení" @ok="confirmNewSession" ok-title="Zahájit" cancel-title="Zrušit">
+    <div class="mb-3">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" v-model="newSessionData.isExisting" :value="false" id="newPat">
+        <label class="form-check-label" for="newPat">Nový pacient</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" v-model="newSessionData.isExisting" :value="true" id="existPat">
+        <label class="form-check-label" for="existPat">Stávající pacient</label>
+      </div>
+    </div>
+    
+    <div v-if="!newSessionData.isExisting" class="mb-3">
+      <label class="form-label small fw-bold">Jméno pacienta</label>
+      <input v-model="newSessionData.name" type="text" class="form-control" placeholder="Zadejte jméno..." autofocus>
+      <div class="row g-2 mt-2">
+        <div class="col-6">
+          <label class="form-label small fw-bold">Věk</label>
+          <input v-model="newSessionData.age" type="number" class="form-control" placeholder="Věk">
+        </div>
+        <div class="col-6">
+          <label class="form-label small fw-bold">Pohlaví</label>
+          <select v-model="newSessionData.gender" class="form-select">
+            <option value="">Vybrat</option>
+            <option value="Muž">Muž</option>
+            <option value="Žena">Žena</option>
+            <option value="Jiné">Jiné</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div v-else class="mb-3">
+      <label class="form-label small fw-bold">Vybrat pacienta</label>
+      <select v-model="newSessionData.patientId" class="form-select">
+        <option value="">-- Vyberte --</option>
+        <option v-for="p in existingPatients" :key="p.id" :value="p.id">{{ p.name }}</option>
+      </select>
+    </div>
+  </BModal>
+
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getSummaryAnalysisPrompt, getChatSystemMessage, getMedicationTrackerPrompt } from '@/services/aiPrompts'
+import { getSummaryAnalysisPrompt, getChatSystemMessage, getBriefChatSystemMessage, getMedicationTrackerPrompt } from '@/services/aiPrompts'
+import { storageService } from '@/services/storageService'
 import { doctorApi, type ClinicalSession } from '@/services/doctorApi'
+import { useClinicalData } from '@/composables/useClinicalData'
 import SurveyQRCode from '@/components/SurveyQRCode.vue'
+import { useSurvey } from '@/composables/useSurvey'
 import { Marked } from 'marked'
 
 const route = useRoute()
 const router = useRouter()
+const { startNewSession, saveSession, fetchPatients, fetchSessions, fetchWorksheets, createWorksheet } = useClinicalData()
+
+// Survey logic
+const { fetchSurveys, getSurveysBySession } = useSurvey()
 
 // Configure marked instance
 const marked = new Marked({
@@ -412,17 +516,116 @@ const isLoading = ref(false)
 const activeContextTab = ref<'summary' | 'transcript'>('summary')
 const showChatList = ref(true)
 const showQrModal = ref(false)
+const showNewSessionModal = ref(false)
 const streamingContent = ref('')
+const streamingSummary = ref('')
+
+function getModelSettings() {
+  return {
+    chatMaxTokens: parseInt(localStorage.getItem('omlx_chat_max_tokens') || '1024'),
+    summaryMaxTokens: parseInt(localStorage.getItem('omlx_summary_max_tokens') || '2048'),
+    temperature: parseFloat(localStorage.getItem('omlx_temperature') || '0.7'),
+    systemPrompt: localStorage.getItem('omlx_chat_system_prompt') || '',
+  }
+}
+
+const newSessionData = reactive({
+  name: '',
+  age: null as number | null,
+  gender: '',
+  patientId: '',
+  isExisting: false
+})
+
+const existingPatients = ref<any[]>([])
 
 const currentChat = computed(() => {
   if (!currentChatId.value) return null
   return chats.value.find((c) => c.chatId === currentChatId.value) || null
 })
 
+const currentSessionSurveys = computed(() => {
+  if (!currentChat.value) return []
+  return getSurveysBySession(currentChat.value.chatId).value
+})
+
+const currentSessionWorksheets = ref<any[]>([])
+
+function createNewSession() {
+  storageService.getPatients().then(pts => {
+    existingPatients.value = pts
+  })
+  showNewSessionModal.value = true
+}
+
+async function confirmNewSession() {
+  let name = ''
+  let patId = ''
+  let age: number | undefined
+  let gender: string | undefined
+
+  if (newSessionData.isExisting) {
+    const p = existingPatients.value.find(p => p.patient_id === newSessionData.patientId)
+    if (!p) return
+    name = p.name
+    patId = p.patient_id
+    age = p.age
+    gender = p.gender
+  } else {
+    if (!newSessionData.name) return
+    name = newSessionData.name
+    age = newSessionData.age ?? undefined
+    gender = newSessionData.gender || undefined
+    patId = `PAT-${Math.random().toString(36).substring(2, 7)}`
+    await storageService.savePatient({
+      patient_id: patId,
+      name,
+      age,
+      gender,
+      doctor_id: 'DOC-default',
+    })
+  }
+
+  const newChatId = `SES-${Math.random().toString(36).substring(2, 7)}`
+  const now = new Date().toISOString()
+
+  const newChat: Chat = {
+    chatId: newChatId,
+    patientId: patId,
+    patientName: name,
+    patientAge: age,
+    patientGender: gender,
+    createdAt: now,
+    lastActivity: now,
+    messages: [],
+  }
+
+  chats.value.unshift(newChat)
+  selectChat(newChatId)
+  await saveChat(newChat)
+
+  newSessionData.name = ''
+  newSessionData.age = null
+  newSessionData.gender = ''
+  newSessionData.patientId = ''
+  newSessionData.isExisting = false
+  showNewSessionModal.value = false
+}
+
+async function loadSessionWorksheets() {
+  if (!currentChat.value) return
+  try {
+    const all = await fetchWorksheets(currentChat.value.patientId)
+    currentSessionWorksheets.value = all.filter((ws: any) => ws.session_id === currentChat.value?.chatId)
+  } catch (e) {
+    currentSessionWorksheets.value = []
+  }
+}
+
 async function loadChats() {
   isLoading.value = true
   try {
-    const sessions = await doctorApi.getSessions()
+    const sessions = await storageService.getSessions()
     chats.value = sessions.map(s => {
       const analysis = typeof s.ai_analysis === 'string' ? JSON.parse(s.ai_analysis) : s.ai_analysis
       return {
@@ -440,70 +643,43 @@ async function loadChats() {
       }
     })
   } catch (e) {
-    console.error('[Chat] Failed to load from API, falling back to localStorage:', e)
-    const stored = localStorage.getItem('doctor_chats')
-    chats.value = stored ? JSON.parse(stored) : []
-  } finally {
-    isLoading.value = false
+    console.debug('[Chat] Failed to load chats:', (e as Error)?.message)
   }
-}
-
-async function saveChat(chat: Chat) {
-  try {
-    const session: ClinicalSession = {
-      session_id: chat.chatId,
-      patient_id: chat.patientId,
-      doctor_id: 'DOC-default',
-      clinic_id: 'CLI-default',
-      transcript: chat.transcript,
-      ai_analysis: {
-        patientName: chat.patientName,
-        patientAge: chat.patientAge,
-        patientGender: chat.patientGender,
-        patientNotes: chat.patientNotes,
-        aiSummary: chat.aiSummary,
-        lastActivity: chat.lastActivity,
-        messages: chat.messages
-      }
-    }
-    await doctorApi.saveSession(session)
-  } catch (e) {
-    console.error('[Chat] API save failed, saving to localStorage:', e)
-    localStorage.setItem('doctor_chats', JSON.stringify(chats.value))
-  }
-}
-
-function selectChat(chatId: string) {
-  currentChatId.value = chatId
-  router.replace(`/doctor/chat/${chatId}`)
-  nextTick(scrollToBottom)
-}
-
-function createNewSession() {
-  const name = prompt('Zadejte jméno pacienta:')
-  if (!name) return
-
-  const newPatientId = `PAT-${Math.random().toString(36).substring(2, 7)}`
-  const newChatId = `SES-${Math.random().toString(36).substring(2, 7)}`
-  const now = new Date().toISOString()
-
-  const newChat: Chat = {
-    chatId: newChatId,
-    patientId: newPatientId,
-    patientName: name,
-    createdAt: now,
-    lastActivity: now,
-    messages: []
-  }
-
-  chats.value.unshift(newChat)
-  selectChat(newChatId)
-  saveChat(newChat)
 }
 
 function scrollToBottom() {
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    const el = messagesContainer.value
+    const threshold = 100
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+    if (isNearBottom) {
+      el.scrollTop = el.scrollHeight
+    }
+  }
+}
+
+async function saveChat(chat: Chat) {
+  const session: ClinicalSession = {
+    session_id: chat.chatId,
+    patient_id: chat.patientId,
+    doctor_id: 'DOC-default',
+    clinic_id: 'CLI-default',
+    transcript: chat.transcript,
+    status: 'active',
+    ai_analysis: {
+      patientName: chat.patientName,
+      patientAge: chat.patientAge,
+      patientGender: chat.patientGender,
+      patientNotes: chat.patientNotes,
+      aiSummary: chat.aiSummary,
+      lastActivity: chat.lastActivity,
+      messages: chat.messages,
+    },
+  }
+  try {
+    await storageService.saveSession(session)
+  } catch {
+    // Best-effort — storageService handles local persistence
   }
 }
 
@@ -567,12 +743,14 @@ async function generateWorksheet() {
         ],
         max_tokens: 1500,
         temperature: 0.3,
+        stop: ['<end_of_turn>'],
       }),
     })
 
     if (response.ok) {
       const data = await response.json()
-      const contentStr = data.choices?.[0]?.message?.content || ''
+      let contentStr = data.choices?.[0]?.message?.content || ''
+      contentStr = contentStr.split('<end_of_turn>')[0].trim()
       
       // Try to parse the JSON from AI
       let worksheetContent
@@ -603,7 +781,7 @@ async function generateWorksheet() {
         })
       }
 
-      await doctorApi.createWorksheet({
+      await createWorksheet({
         patient_id: currentChat.value.patientId,
         session_id: currentChat.value.chatId,
         content: {
@@ -613,7 +791,7 @@ async function generateWorksheet() {
         }
       })
 
-      alert('Pracovní list byl úspěšně vygenerován a odeslán pacientovi.')
+      alert('Pracovní list byl úspěšně vygenerován.')
     }
   } catch (e: any) {
     console.error('[Chat] Worksheet generation failed:', e)
@@ -627,10 +805,10 @@ async function generateSummary() {
   if (!currentChat.value || !currentChat.value.transcript || isAnalyzing.value) return
 
   isAnalyzing.value = true
+  streamingSummary.value = ''
 
   try {
     const transcript = currentChat.value.transcript
-
     const prompt = getSummaryAnalysisPrompt(transcript)
 
     const response = await fetch('/omlx/chat/completions', {
@@ -645,26 +823,56 @@ async function generateSummary() {
           {
             role: 'system',
             content:
-              'Jsi zkušený klinický asistent. Tvým úkolem je analyzovat přepisy lékařských konzultací.',
+              getModelSettings().systemPrompt || 'Jsi zkušený klinický asistent. Tvým úkolem je analyzovat přepisy lékařských konzultací.',
           },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 1000,
-        temperature: 0.3,
+        max_tokens: getModelSettings().summaryMaxTokens,
+        temperature: getModelSettings().temperature,
+        stream: true,
+        stop: ['<end_of_turn>'],
       }),
     })
 
-    if (response.ok) {
-      const data = await response.json()
-      const summary = data.choices?.[0]?.message?.content || 'Shrnutí se nepodařilo vygenerovat.'
+    if (!response.ok) throw new Error(`API failed: ${response.status}`)
 
-      currentChat.value.aiSummary = summary
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No reader')
+
+    const decoder = new TextDecoder()
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value, { stream: true })
+      const lines = chunk.split('\n')
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const dataStr = line.slice(6).trim()
+          if (dataStr === '[DONE]') break
+
+          try {
+            const data = JSON.parse(dataStr)
+            const content = data.choices?.[0]?.delta?.content || ''
+            streamingSummary.value += content
+          } catch (e) {
+            // Partial JSON
+          }
+        }
+      }
+    }
+
+    if (streamingSummary.value) {
+      currentChat.value.aiSummary = streamingSummary.value
       await saveChat(currentChat.value)
     }
   } catch (e) {
     console.error('[Chat] Summary generation failed:', e)
   } finally {
     isAnalyzing.value = false
+    streamingSummary.value = ''
   }
 }
 
@@ -674,14 +882,27 @@ async function sendToOmlx() {
   isSending.value = true
 
   try {
-    // Build system message with full patient context (sent each request for stateless API)
-    const systemMessage = getChatSystemMessage({
-      patientName: currentChat.value.patientName,
-      patientAge: currentChat.value.patientAge,
-      patientGender: currentChat.value.patientGender,
-      aiSummary: currentChat.value.aiSummary,
-      transcript: currentChat.value.transcript,
-    })
+    // Full context (transcript + summary) on first exchange, summary on subsequent
+    const isFirstExchange = currentChat.value.messages.length <= 1
+    const settings = getModelSettings()
+    const baseMessage = isFirstExchange
+      ? getChatSystemMessage({
+          patientName: currentChat.value.patientName,
+          patientAge: currentChat.value.patientAge,
+          patientGender: currentChat.value.patientGender,
+          aiSummary: currentChat.value.aiSummary,
+          transcript: currentChat.value.transcript,
+        })
+      : getBriefChatSystemMessage({
+          patientName: currentChat.value.patientName,
+          patientAge: currentChat.value.patientAge,
+          patientGender: currentChat.value.patientGender,
+          aiSummary: currentChat.value.aiSummary,
+        })
+
+    const systemMessage = settings.systemPrompt
+      ? settings.systemPrompt + '\n\n' + baseMessage
+      : baseMessage
 
     // Send last 10 messages for conversation continuity
     const historyMessages = currentChat.value.messages.slice(-10).map((m) => ({
@@ -698,9 +919,10 @@ async function sendToOmlx() {
       body: JSON.stringify({
         model: 'gemma-4-e4b-it-OptiQ-4bit',
         messages: [{ role: 'system', content: systemMessage }, ...historyMessages],
-        max_tokens: 500,
-        temperature: 0.7,
+        max_tokens: getModelSettings().chatMaxTokens,
+        temperature: getModelSettings().temperature,
         stream: true,
+        stop: ['<end_of_turn>'],
       }),
     })
 
@@ -757,10 +979,9 @@ async function sendToOmlx() {
 }
 
 function clearAllChats() {
-  if (!confirm('Smazat všechny lokální chaty? Pozor: Chaty v databázi zůstanou zachovány.')) return
+  if (!confirm('Tato akce skryje chaty v tomto zobrazení. Chaty v databázi zůstanou zachovány.')) return
   chats.value = []
   currentChatId.value = null
-  localStorage.removeItem('doctor_chats')
   router.replace('/doctor/chat')
 }
 
@@ -807,8 +1028,18 @@ function formatTime(timestamp: string): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function selectChat(chatId: string) {
+  currentChatId.value = chatId
+  router.replace(`/doctor/chat/${chatId}`)
+  nextTick(scrollToBottom)
+  fetchSurveys()
+  nextTick(loadSessionWorksheets)
+}
+
 onMounted(() => {
   loadChats()
+  fetchSurveys()
+  storageService.syncAll() // Background sync
   const chatId = route.params.chatId as string
   if (chatId) {
     currentChatId.value = chatId
@@ -940,6 +1171,7 @@ watch(
 .truncate-1 {
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

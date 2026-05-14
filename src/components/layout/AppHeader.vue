@@ -14,6 +14,9 @@
           <BDropdownItem :to="'/patients/home'">
             <i class="bi bi-house me-2"></i>Přehled
           </BDropdownItem>
+          <BDropdownItem :to="'/patients/blog'">
+            <i class="bi bi-stars me-2"></i>Novinky z výzkumu
+          </BDropdownItem>
           <BDropdownItem :to="'/patients/worksheets'">
             <i class="bi bi-journal-text me-2"></i>Pracovní listy
           </BDropdownItem>
@@ -28,18 +31,21 @@
           </BDropdownItem>
         </BNavItemDropdown>
         <BNavItemDropdown text="Portál pro lékaře">
-          <BDropdownItem :to="'/doctor/home'"> <i class="bi bi-house me-2"></i>Domů </BDropdownItem>
+          <BDropdownItem :to="'/'"> <i class="bi bi-house me-2"></i>Domů </BDropdownItem>
           <BDropdownItem :to="'/doctor/chat'">
-            <i class="bi bi-chat-dots me-2"></i>Chaty
-          </BDropdownItem>
-          <BDropdownItem :to="'/doctor/education'">
-            <i class="bi bi-search me-2"></i>Vyhledávání literatury
+            <i class="bi bi-chat-dots me-2"></i>Lékařský Chat
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/research'">
-            <i class="bi bi-journal-bookmark me-2"></i>Výzkumný sešit
+            <i class="bi bi-robot me-2"></i>Medical Researcher
           </BDropdownItem>
           <BDropdownItem :to="'/doctor/transcription'">
-            <i class="bi bi-mic me-2"></i>Přepis audia
+            <i class="bi bi-mic me-2"></i>Přepis konzultací
+          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/patients'">
+            <i class="bi bi-person-lines-fill me-2"></i>Správa pacientů
+          </BDropdownItem>
+          <BDropdownItem :to="'/doctor/calendar'">
+            <i class="bi bi-calendar-check me-2"></i>Kalendář
           </BDropdownItem>
           <BDropdownDivider />
           <BDropdownItem :to="'/settings'">
@@ -61,7 +67,7 @@ import {
   BNavbarBrand,
   BNavItemDropdown,
   BDropdownItem,
-  BDropdownDivider,
+  BDropdownDivider
 } from 'bootstrap-vue-next'
 </script>
 

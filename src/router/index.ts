@@ -34,6 +34,11 @@ const router = createRouter({
       component: () => import('../views/patient/PatientResources.vue'),
     },
     {
+      path: '/patients/blog',
+      name: 'patient-blog',
+      component: () => import('../views/patient/PatientBlog.vue'),
+    },
+    {
       path: '/patients/audio',
       name: 'patient-audio',
       component: () => import('../views/patient/PatientAudioLibrary.vue'),
@@ -58,30 +63,19 @@ const router = createRouter({
       name: 'patient-general-survey',
       component: () => import('../views/patient/GeneralSurvey.vue'),
     },
-    {
-      path: '/doctor/feedback',
-      name: 'doctor-feedback',
-      component: () => import('../views/PatientFeedback.vue'),
-    },
     // Doctor portal routes
     {
       path: '/doctor',
-      redirect: '/doctor/home',
-    },
-    {
-      path: '/doctor/home',
-      name: 'doctor-home',
-      component: () => import('../views/doctor/DoctorLanding.vue'),
+      redirect: '/doctor/chat',
     },
     {
       path: '/doctor/education',
-      name: 'doctor-education',
-      component: () => import('../views/doctor/DoctorEducation.vue'),
+      redirect: '/doctor/research'
     },
     {
       path: '/doctor/research',
-      name: 'doctor-research',
-      component: () => import('../views/doctor/ResearchNotebook.vue'),
+      name: 'medical-researcher',
+      component: () => import('../views/doctor/MedicalResearcher.vue'),
     },
     {
       path: '/doctor/transcription',
@@ -97,6 +91,16 @@ const router = createRouter({
       path: '/doctor/chat/:chatId',
       name: 'doctor-chat-detail',
       component: () => import('../views/doctor/ChatView.vue'),
+    },
+    {
+      path: '/doctor/patients',
+      name: 'doctor-patients',
+      component: () => import('../views/doctor/PatientsView.vue'),
+    },
+    {
+      path: '/doctor/calendar',
+      name: 'doctor-calendar',
+      component: () => import('../views/doctor/CalendarView.vue'),
     },
     // Settings route
     {

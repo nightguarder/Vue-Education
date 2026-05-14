@@ -178,6 +178,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { patientApi } from '@/services/patientApi'
 
 interface FeedbackEntry {
   patientId?: string
@@ -225,16 +226,9 @@ watch(patientId, (newId) => {
 })
 
 function loadFeedbackHistory(id: string) {
-  try {
-    const allFeedback = JSON.parse(
-      localStorage.getItem('patientFeedback') || '[]',
-    ) as FeedbackEntry[]
-    feedbackHistory.value = allFeedback
-      .filter((f) => f.patientId === id)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-  } catch {
-    feedbackHistory.value = []
-  }
+  // Since we are removing localStorage and history fetching is not implemented on backend for feedback yet,
+  // we will keep history empty for now or rely on a future API endpoint.
+  feedbackHistory.value = []
 }
 
 async function submitFeedback() {
@@ -243,27 +237,17 @@ async function submitFeedback() {
   submitting.value = true
 
   try {
-    const entry: FeedbackEntry = {
-      patientId: patientId.value || undefined,
-      moduleType: moduleType.value,
+    const entry = {
+      patient_id: patientId.value || 'anonymous',
+      type: 'general',
+      module_type: moduleType.value,
       rating: rating.value,
       difficulty: difficulty.value,
       comments: comments.value,
-      wouldRecommend: wouldRecommend.value ?? true,
-      timestamp: new Date().toISOString(),
+      would_recommend: wouldRecommend.value ?? true
     }
 
-    // Save to localStorage (TODO: replace with MySQL API)
-    const allFeedback = JSON.parse(
-      localStorage.getItem('patientFeedback') || '[]',
-    ) as FeedbackEntry[]
-    allFeedback.push(entry)
-    localStorage.setItem('patientFeedback', JSON.stringify(allFeedback))
-
-    // Update history if patient ID provided
-    if (patientId.value) {
-      loadFeedbackHistory(patientId.value)
-    }
+    await patientApi.submitFeedback(entry)
 
     // Reset form
     submitted.value = true
@@ -279,6 +263,7 @@ async function submitFeedback() {
     }, 3000)
   } catch (err: any) {
     console.error('[PatientFeedback] Submit error:', err)
+    alert('Nepodařilo se odeslat zpětnou vazbu. Zkuste to prosím později.')
   } finally {
     submitting.value = false
   }

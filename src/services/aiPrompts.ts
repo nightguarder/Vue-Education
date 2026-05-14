@@ -15,26 +15,25 @@ export const CORRECTION_PROMPT = `Oprav gramatické chyby, překlepy a interpunk
 export const SPEAKER_DETECTION_PROMPT = `Analyzuj následující přepis konzultace. Identifikuj mluvčí (Lékař/Pacient) a vyčisti text od výplňkových slov.`
 
 export function getSummaryAnalysisPrompt(transcript: string): string {
-  return `Analyzuj následující přepis konzultace.
-
-SNAŽ SE POROZUMĚT KONVERZACI:
-- První mluvčí typicky zdraví a představuje se: "Dobrý den, jméno..."
-- Druhý mluvčí odpovídá a představuje se
-- Tazatel klade otázky (začíná na "Jak", "Co", "Proč", "Můžete", "Zmínil jste", "Povězte")
-- Odpovídač popisuje zkušenosti ("Od roku", "Mám", "Zažívám", "Když")
-
-POUŽIJ TATO PRAVIDLA:
-- Lékař = klade otázky, formální "Vy", začíná zdravím
-- Pacient = odpovídá, popisuje, "Já/Mám"
+  return `Analyzuj následující přepis konzultace a vytvoř strukturované klinické shrnutí.
 
 ÚKOL:
-1. Identifikuj mluvčí (Lékař/Pacient).
-2. Vytvoř stručné klinické shrnutí (hlavní obtíže, anamnéza, doporučení).
-3. Oprav chyby a odstraň výplňková slova (hmm, eh, no, jo).
+1. Hlavní obtíže a symptomy pacienta.
+2. Anamnéza a relevantní pozadí.
+3. Doporučení a další postup.
+4. Léky a léčba (pokud zmíněno).
+
+Pravidla:
+- Piš v češtině.
+- Formátuj jako strukturovaný text s odrážkami (-).
+- Nezahrnuj identifikaci mluvčího.
+- Buď stručný a odborný.
 
 Přepis:
 ${transcript}`
 }
+
+export const MAX_TRANSCRIPT_CHARS = 4000
 
 export interface ChatContext {
   patientName: string
@@ -56,13 +55,40 @@ export function getChatSystemMessage(context: ChatContext): string {
 
   if (context.aiSummary) {
     parts.push('', 'KLINICKÉ SHRNUTÍ:', `  ${context.aiSummary}`)
-  } else if (context.transcript) {
-    parts.push(
-      '',
-      'POZNÁMKA: K dispozici je přepis konzultace (přibližně ' +
-        context.transcript.length +
-        ' znaků).',
-    )
+  }
+
+  if (context.transcript) {
+    const truncated = context.transcript.length > MAX_TRANSCRIPT_CHARS
+      ? context.transcript.slice(0, MAX_TRANSCRIPT_CHARS) + '\n...[přepis zkrácen, plná délka: ' + context.transcript.length + ' znaků]'
+      : context.transcript
+    parts.push('', 'PŘEPIS KONZULTACE:', truncated)
+  }
+
+  parts.push(
+    '',
+    'PRAVIDLA PRO ODPOVĚĎ:',
+    '  1. Odpovídejte stručně, odborně a k věci (max 3-4 věty).',
+    '  2. Nenavrhujte odeslání k psychiatrovi (pacient už u něj je).',
+    '  3. Navrhujte konkrétní diagnostické závěry, vyšetřovací postupy, psychoterapii nebo farmakoterapii.',
+    '  4. Neopakujte předchozí odpovědi - posuňte analýzu dál.',
+    '  5. Reagujte na konkrétní dotaz lékaře v kontextu tohoto pacienta.',
+  )
+
+  return parts.join('\n')
+}
+
+export function getBriefChatSystemMessage(context: ChatContext): string {
+  const parts = [
+    'Jste expertní klinický asistent pracující s atestovaným dětským a dorostovým psychiatrem.',
+    '',
+    'PACIENT:',
+    `  Jméno: ${context.patientName}`,
+    `  Věk: ${context.patientAge || 'Neznámé'}`,
+    `  Pohlaví: ${context.patientGender || 'Neznámé'}`,
+  ]
+
+  if (context.aiSummary) {
+    parts.push('', 'KLINICKÉ SHRNUTÍ:', `  ${context.aiSummary}`)
   }
 
   parts.push(
@@ -100,6 +126,33 @@ Abstrakt: ${abstract}
 
 export const WORKSHEET_SYSTEM_PROMPT =
   'Jste lékařský editor. Neuvádějte vnitřní monolog, přemýšlení ani doprovodný text.'
+
+export const BLOG_POST_PROMPT = (title: string, abstract: string) => `
+You are a medical science communicator. Write a structured "Deep Dive" blog post for busy doctors based on this paper.
+Title: ${title}
+Abstract: ${abstract}
+
+STRUCTURE:
+1. **The Core Message** (One sentence summary)
+2. **Why It Matters** (Clinical significance)
+3. **Key Findings** (3-4 bullet points)
+4. **Takeaways for Practice** (Specific advice for doctors)
+5. **The Bottom Line** (Concluding thought)
+
+Write in English. Use professional yet engaging tone. Use Markdown formatting.
+`
+
+export const PODCAST_SCRIPT_PROMPT = (title: string, abstract: string) => `
+You are a podcast host for "Clinical Minutes". Write a short (2-minute) script for a podcast episode summarizing this paper.
+Title: ${title}
+Abstract: ${abstract}
+
+ROLES:
+- Host A: Engaging, asks the "so what?" questions.
+- Host B: Medical expert, explains the data simply.
+
+Write in English. Keep it conversational and fast-paced.
+`
 
 export const RESEARCH_SUMMARY_PROMPT = (sources: string, topic: string) => `
 Na základě následujících webových zdrojů napiš komplexní výzkumnou zprávu v češtině.

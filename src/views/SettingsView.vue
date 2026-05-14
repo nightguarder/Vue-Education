@@ -25,7 +25,17 @@
               {{ testResult.message }}
               <button type="button" class="btn-close" @click="testResult = null"></button>
             </div>
-
+            <div
+              v-if="dbTestResult"
+              :class="[
+                'alert',
+                dbTestResult.success ? 'alert-success' : 'alert-danger',
+                'alert-dismissible',
+              ]"
+            >
+              {{ dbTestResult.message }}
+              <button type="button" class="btn-close" @click="dbTestResult = null"></button>
+            </div>
             <h5 class="mb-3">Nastavení připojení</h5>
             <form @submit.prevent="saveSettings">
               <div class="mb-3">
@@ -129,21 +139,106 @@
                 <div class="form-text">Model používaný pro přepis audia (Parakeet TDT).</div>
               </div>
 
-              <div class="d-flex gap-2 mb-4">
-                <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-check-lg me-1"></i> Uložit nastavení
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary"
-                  @click="testConnection"
-                  :disabled="testing"
-                >
-                  <span v-if="testing" class="spinner-border spinner-border-sm me-1"></span>
-                  <i v-else class="bi bi-plug me-1"></i>
-                  {{ testing ? 'Testování...' : 'Test připojení' }}
+              <hr class="my-4">
+              <div class="d-flex align-items-center mb-3">
+                <button class="btn btn-sm btn-outline-secondary" type="button" @click="showAdvanced = !showAdvanced">
+                  <i :class="showAdvanced ? 'bi bi-chevron-down' : 'bi bi-chevron-right'" class="me-1"></i>
+                  Pokročilé nastavení
                 </button>
               </div>
+              <div v-if="showAdvanced" class="fade-in">
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label small">Max. tokenů (chat)</label>
+                    <input v-model.number="config.chatMaxTokens" type="range" min="256" max="4096" step="128" class="form-range">
+                    <div class="d-flex justify-content-between">
+                      <small class="text-muted">256</small>
+                      <small class="fw-bold">{{ config.chatMaxTokens }}</small>
+                      <small class="text-muted">4096</small>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Max. tokenů (shrnutí)</label>
+                    <input v-model.number="config.summaryMaxTokens" type="range" min="512" max="4096" step="128" class="form-range">
+                    <div class="d-flex justify-content-between">
+                      <small class="text-muted">512</small>
+                      <small class="fw-bold">{{ config.summaryMaxTokens }}</small>
+                      <small class="text-muted">4096</small>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Teplota</label>
+                    <input v-model.number="config.temperature" type="range" min="0" max="2" step="0.1" class="form-range">
+                    <div class="d-flex justify-content-between">
+                      <small class="text-muted">0</small>
+                      <small class="fw-bold">{{ config.temperature.toFixed(1) }}</small>
+                      <small class="text-muted">2</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small">Systémová prompt (chat)</label>
+                  <textarea v-model="config.systemPrompt" class="form-control" rows="4" placeholder="Výchozí systémová prompt se použije pokud je prázdné."></textarea>
+                  <div class="form-text">Upravuje chování AI v chatu. Pokud je prázdné, použije se výchozí prompt.</div>
+                </div>
+              </div>
+
+              <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Uložit
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    @click="testConnection"
+                    :disabled="testing"
+                  >
+                    <span v-if="testing" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-plug me-1"></i>
+                    Test OMLX
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-info"
+                    @click="testDbConnection"
+                    :disabled="dbTesting || storageService.useOffline.value"
+                  >
+                    <span v-if="dbTesting" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-database me-1"></i>
+                    Test DB
+                  </button>
+                </div>
+
+                <div class="d-flex gap-3 align-items-center ms-md-auto">
+                  <div class="form-check form-switch mb-0">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      id="useOffline" 
+                      v-model="storageService.useOffline.value"
+                    >
+                    <label class="form-check-label small" for="useOffline">Offline režim</label>
+                  </div>
+                  
+                  <div class="form-check form-switch mb-0">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      id="autoSync" 
+                      v-model="storageService.autoSync.value"
+                    >
+                    <label class="form-check-label small" for="autoSync">Auto-sync</label>
+                  </div>
+                </div>
+
+                <!-- Sync & Status Indicator -->
+                <div v-if="storageService.pendingCount.value > 0" class="d-flex align-items-center gap-1 text-muted small">
+                  <i class="bi bi-cloud-arrow-up" :class="{ 'syncing-animation': storageService.isSyncing.value }"></i>
+                  <span>{{ storageService.pendingCount.value }} {{ getPendingText(storageService.pendingCount.value) }}</span>
+                </div>
+              </div>
+              
             </form>
           </div>
         </div>
@@ -154,14 +249,20 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { storageService } from '@/services/storageService'
 
 const OMLX_API_URL_KEY = 'omlx_url'
 const OMLX_MODEL_KEY = 'omlx_model'
 const OMLX_TRANSLATION_MODEL_KEY = 'omlx_model_translation'
 const OMLX_API_KEY_KEY = 'omlx_api_key'
 const OMLX_TRANSCRIPT_MODEL_KEY = 'omlx_transcript_model'
+const OMLX_CHAT_MAX_TOKENS_KEY = 'omlx_chat_max_tokens'
+const OMLX_SUMMARY_MAX_TOKENS_KEY = 'omlx_summary_max_tokens'
+const OMLX_TEMPERATURE_KEY = 'omlx_temperature'
+const OMLX_CHAT_SYSTEM_PROMPT_KEY = 'omlx_chat_system_prompt'
 
 const showApiKey = ref(false)
+const showAdvanced = ref(false)
 const availableModels = ref<{ value: string; text: string }[]>([
   { value: 'gemma-4-e4b-it-OptiQ-4bit', text: 'gemma-4-e4b-it-OptiQ-4bit (výchozí)' },
 ])
@@ -177,6 +278,10 @@ const config = reactive({
   model: 'gemma-4-e4b-it-OptiQ-4bit',
   transModel: 'gemma-4-e4b-it-OptiQ-4bit',
   transcriptModel: 'parakeet-tdt-0.6b-v3',
+  chatMaxTokens: 1024,
+  summaryMaxTokens: 2048,
+  temperature: 0.7,
+  systemPrompt: '',
 })
 
 const isApiKeyValid = computed(() => config.apiKey.length >= 4)
@@ -196,6 +301,18 @@ onMounted(async () => {
   const savedTranscriptModel = localStorage.getItem(OMLX_TRANSCRIPT_MODEL_KEY)
   if (savedTranscriptModel) config.transcriptModel = savedTranscriptModel
 
+  const savedChatMaxTokens = localStorage.getItem(OMLX_CHAT_MAX_TOKENS_KEY)
+  if (savedChatMaxTokens) config.chatMaxTokens = parseInt(savedChatMaxTokens)
+
+  const savedSummaryMaxTokens = localStorage.getItem(OMLX_SUMMARY_MAX_TOKENS_KEY)
+  if (savedSummaryMaxTokens) config.summaryMaxTokens = parseInt(savedSummaryMaxTokens)
+
+  const savedTemperature = localStorage.getItem(OMLX_TEMPERATURE_KEY)
+  if (savedTemperature) config.temperature = parseFloat(savedTemperature)
+
+  const savedSystemPrompt = localStorage.getItem(OMLX_CHAT_SYSTEM_PROMPT_KEY)
+  if (savedSystemPrompt) config.systemPrompt = savedSystemPrompt
+
   if (config.port && config.apiKey) {
     fetchModels()
     fetchTranscriptModels()
@@ -203,6 +320,12 @@ onMounted(async () => {
 })
 
 async function fetchModels() {
+  // Prevent Mixed Content errors: Browsers block HTTPS -> HTTP (localhost)
+  if (window.location.protocol === 'https:' && !config.port.toString().includes('https')) {
+    console.warn('OMLX: Local fetch skipped to avoid Mixed Content block on HTTPS.')
+    return
+  }
+
   loadingModels.value = true
   try {
     const response = await fetch(`http://127.0.0.1:${config.port}/v1/models`, {
@@ -225,6 +348,11 @@ async function fetchModels() {
 }
 
 async function fetchTranscriptModels() {
+  // Prevent Mixed Content errors
+  if (window.location.protocol === 'https:' && !config.port.toString().includes('https')) {
+    return
+  }
+
   loadingTranscriptModels.value = true
   try {
     const response = await fetch(`http://127.0.0.1:${config.port}/v1/models`, {
@@ -250,6 +378,8 @@ async function fetchTranscriptModels() {
 
 const saveSuccess = ref(false)
 const testing = ref(false)
+const dbTesting = ref(false)
+const dbTestResult = ref<{ success: boolean; message: string } | null>(null)
 const testResult = ref<{ success: boolean; message: string } | null>(null)
 
 function saveSettings() {
@@ -259,6 +389,14 @@ function saveSettings() {
   localStorage.setItem(OMLX_TRANSLATION_MODEL_KEY, config.transModel)
   localStorage.setItem(OMLX_API_KEY_KEY, config.apiKey)
   localStorage.setItem(OMLX_TRANSCRIPT_MODEL_KEY, config.transcriptModel)
+  localStorage.setItem(OMLX_CHAT_MAX_TOKENS_KEY, String(config.chatMaxTokens))
+  localStorage.setItem(OMLX_SUMMARY_MAX_TOKENS_KEY, String(config.summaryMaxTokens))
+  localStorage.setItem(OMLX_TEMPERATURE_KEY, String(config.temperature))
+  if (config.systemPrompt) {
+    localStorage.setItem(OMLX_CHAT_SYSTEM_PROMPT_KEY, config.systemPrompt)
+  } else {
+    localStorage.removeItem(OMLX_CHAT_SYSTEM_PROMPT_KEY)
+  }
 
   const settings = JSON.parse(localStorage.getItem('local_omlx_settings') || '{}')
   settings.transcriptModel = config.transcriptModel
@@ -273,6 +411,7 @@ function saveSettings() {
 async function testConnection() {
   testing.value = true
   testResult.value = null
+  dbTestResult.value = null
 
   try {
     await fetchModels()
@@ -313,4 +452,47 @@ async function testConnection() {
     testing.value = false
   }
 }
+
+function getPendingText(count: number) {
+  if(count == 0 )return "Vše je synchronizováno"
+  if(count === 1) return "Jedna položka k synchronizaci"
+  if(count >=2 && count<=4) return `${count} položky k synchronizaci`
+  else return `${count} položek k synchronizaci`
+}
+async function testDbConnection() {
+  dbTesting.value = true
+  dbTestResult.value = null
+  testResult.value = null
+  try {
+    const success = await storageService.checkDbConnection()
+    if (success) {
+      dbTestResult.value = {
+        success: true,
+        message: 'Spojení s databází bylo úspěšně navázáno.',
+      }
+    } else {
+      dbTestResult.value = {
+        success: false,
+        message: 'Nepodařilo se navázat spojení s databází. Jste v offline režimu.',
+      }
+    }
+  } catch {
+    dbTestResult.value = {
+      success: false,
+      message: 'Chyba při testování spojení s databází.',
+    }
+  } finally {
+    dbTesting.value = false
+  }
+}
 </script>
+<style>
+.syncing-animation {
+  animation: sync-spin 2s linear infinite;
+}
+
+@keyframes sync-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>

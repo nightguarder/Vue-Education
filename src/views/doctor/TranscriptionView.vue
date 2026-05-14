@@ -2,358 +2,329 @@
   <div class="container-fluid py-4">
     <div class="row justify-content-center">
       <div class="col-lg-8">
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-white border-bottom">
-            <h4 class="card-title mb-1"><i class="bi bi-mic me-2"></i>Přepis audia</h4>
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+          <div class="card-header bg-white py-3 border-bottom">
+            <h4 class="card-title mb-1 fw-bold text-primary">
+              <i class="bi bi-mic me-2"></i>Přepis konzultací
+            </h4>
             <p class="card-text text-muted mb-0 small">
-              Zadejte údaje o pacientovi, nahrajte audio a nové chatovací sezení se vytvoří
-              automaticky.
+              Nahrajte audio záznam sezení pro automatickou analýzu a vytvoření klinického chatu.
             </p>
 
             <!-- Model Status -->
-            <div class="mt-2 d-flex align-items-center gap-3 flex-wrap">
-              <!-- Mode Toggle (First) -->
-              <div class="form-check form-switch d-flex align-items-center gap-2">
+            <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+              <div
+                class="form-check form-switch d-flex align-items-center gap-2 bg-light px-3 py-1 rounded-pill border"
+              >
                 <input
                   class="form-check-input"
                   type="checkbox"
                   id="transcriptionModeToggle"
                   v-model="useLocalModel"
                 />
-                <label class="form-check-label small mb-0" for="transcriptionModeToggle">
+                <label class="form-check-label small mb-0 fw-medium" for="transcriptionModeToggle">
                   <i
                     :class="
                       useLocalModel ? 'bi bi-gpu-card text-warning' : 'bi bi-server text-success'
                     "
                   ></i>
-                  {{ useLocalModel ? 'WebGPU (experimentální)' : 'OMLX (výchozí)' }}
+                  {{ useLocalModel ? 'WebGPU (Local)' : 'OMLX (Cloud)' }}
                 </label>
               </div>
 
-              <!-- OMLX Mode (Default) - Always Ready -->
               <div v-if="!useLocalModel" class="d-flex align-items-center gap-2">
-                <span class="badge bg-success">
-                  <i class="bi bi-check-circle me-1"></i> Připraveno okamžitě
+                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
+                  <i class="bi bi-check-circle me-1"></i> Připraveno
                 </span>
-                <small class="text-muted">žádné načítání není potřeba</small>
               </div>
 
-              <!-- WebGPU Mode (Experimental) -->
               <div v-else class="d-flex align-items-center gap-2 flex-wrap">
                 <button
                   v-if="!webGpuModelReady"
-                  class="btn btn-sm"
-                  :class="isLoading ? 'btn-warning' : 'btn-outline-warning'"
+                  class="btn btn-sm btn-warning rounded-pill px-3"
                   @click="loadTranscriptionModel"
                   :disabled="isLoading"
                 >
                   <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
                   <i v-else class="bi bi-download me-2"></i>
-                  {{
-                    isLoading ? `Načítání... ${Math.round(downloadProgress)}%` : 'Načíst model (60-85MB)'
-                  }}
+                  {{ isLoading ? `Načítání... ${Math.round(downloadProgress)}%` : 'Načíst model' }}
                 </button>
-                <span v-else class="badge bg-success">
+                <span v-else class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
                   <i class="bi bi-check-circle me-1"></i> Model připraven
                 </span>
               </div>
-
-              <span v-if="error" class="badge bg-danger">{{ error }}</span>
+              <span v-if="error" class="badge bg-danger rounded-pill">{{ error }}</span>
             </div>
+          </div>
 
+          <div class="card-body p-4">
+            <!-- Patient Selection / Details -->
+            <div class="patient-form mb-4 p-4 bg-light rounded-4 border">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-bold">
+                  <i class="bi bi-person-badge me-2 text-primary"></i>Identifikace pacienta
+                </h6>
+                <div
+                  v-if="!existingChatId"
+                  class="btn-group btn-group-sm rounded-pill overflow-hidden border"
+                >
+                  <button
+                    class="btn btn-white px-3"
+                    :class="{ 'bg-primary text-white': !isExistingPatient }"
+                    @click="isExistingPatient = false"
+                  >
+                    Nový
+                  </button>
+                  <button
+                    class="btn btn-white px-3"
+                    :class="{ 'bg-primary text-white': isExistingPatient }"
+                    @click="isExistingPatient = true"
+                  >
+                    Stávající
+                  </button>
+                </div>
+                <div v-else>
+                  <span class="badge bg-primary rounded-pill px-3 py-2">
+                    <i class="bi bi-arrow-return-left me-1"></i>Doplnění sezení
+                  </span>
+                </div>
+              </div>
 
-              <span v-if="error" class="badge bg-danger">{{ error }}</span>
-            </div>
-
-          <div class="card-body">
-            <!-- Patient Details Form -->
-            <div class="patient-form mb-4 p-3 bg-light rounded">
-              <h6 class="mb-3"><i class="bi bi-person-badge me-2"></i>Údaje o pacientovi</h6>
-              <div class="row g-3">
+              <div v-if="!isExistingPatient" class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label small">Celé jméno *</label>
+                  <label class="form-label small fw-bold">Celé jméno *</label>
                   <input
                     v-model="patientName"
                     type="text"
-                    class="form-control form-control-sm"
-                    placeholder="Zadejte celé jméno pacienta"
+                    class="form-control"
+                    placeholder="Jméno a příjmení"
                     required
                   />
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small">Věk</label>
+                  <label class="form-label small fw-bold">Věk</label>
                   <input
                     v-model="patientAge"
                     type="number"
-                    class="form-control form-control-sm"
+                    class="form-control"
                     placeholder="Věk"
-                    min="0"
-                    max="150"
                   />
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small">Pohlaví</label>
-                  <select v-model="patientGender" class="form-select form-select-sm">
+                  <label class="form-label small fw-bold">Pohlaví</label>
+                  <select v-model="patientGender" class="form-select">
                     <option value="">Vybrat</option>
-                    <option value="M">Muž</option>
-                    <option value="F">Žena</option>
-                    <option value="O">Jiné</option>
+                    <option value="Muž">Muž</option>
+                    <option value="Žena">Žena</option>
+                    <option value="Jiné">Jiné</option>
                   </select>
                 </div>
+              </div>
+
+              <div v-else class="row g-3">
                 <div class="col-12">
-                  <label class="form-label small">Poznámky (nepovinné)</label>
-                  <input
+                  <label class="form-label small fw-bold">Vyberte pacienta z evidence</label>
+                  <select v-model="selectedPatientId" class="form-select" @change="syncPatientInfo">
+                    <option value="">-- Vyberte pacienta --</option>
+                    <option v-for="p in patients" :key="p.patient_id" :value="p.patient_id">
+                      {{ p.name }} ({{ p.patient_id }})
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row mt-3">
+                <div class="col-12">
+                  <label class="form-label small fw-bold">Poznámky k sezení</label>
+                  <textarea
                     v-model="patientNotes"
-                    type="text"
-                    class="form-control form-control-sm"
-                    placeholder="Jakékoli další poznámky k tomuto sezení"
-                  />
+                    class="form-control"
+                    rows="2"
+                    placeholder="Kontext sezení, aktuální stav..."
+                  ></textarea>
                 </div>
               </div>
             </div>
 
             <!-- Upload Area -->
             <div
-              class="upload-area text-center p-5 mb-4"
-              :class="{ 'border-primary bg-light': isDragging }"
+              class="upload-area text-center p-5 mb-4 rounded-4 border-dashed"
+              :class="{ 'border-primary bg-primary bg-opacity-10': isDragging }"
               @dragenter.prevent="handleDragEnter"
               @dragover.prevent="handleDragEnter"
               @dragleave.prevent="handleDragLeave"
               @drop.prevent="handleDrop"
             >
               <div v-if="!audioFile">
-                <i class="bi bi-cloud-upload display-4 text-muted mb-3"></i>
-                <h5>Přetáhněte sem audio soubor</h5>
-                <p class="text-muted">nebo</p>
-                <label class="btn btn-outline-primary">
-                  <i class="bi bi-folder me-2"></i>Procházet soubory
+                <i class="bi bi-cloud-upload display-4 text-primary opacity-50 mb-3"></i>
+                <h5 class="fw-bold">Nahrát audio záznam</h5>
+                <p class="text-muted small">Přetáhněte soubor sem nebo jej vyberte ze složky</p>
+                <label class="btn btn-primary rounded-pill px-4 shadow-sm mt-2">
+                  <i class="bi bi-folder2-open me-2"></i>Vybrat soubor
                   <input type="file" accept="audio/*" class="d-none" @change="handleFileSelect" />
                 </label>
-                <p class="text-muted small mt-2">
-                  <i class="bi bi-info-circle me-1"></i>OMLX vyžaduje WAV/MP3/FLAC. Pro m4a použijte
-                  WebGPU (experimental).
-                </p>
               </div>
 
-              <!-- Selected File -->
               <div v-else class="selected-file">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                  <div>
-                    <i class="bi bi-file-audio display-6 text-primary me-3"></i>
-                    <span class="fw-bold">{{ audioFile.name }}</span>
-                    <span class="text-muted ms-2">({{ formatDuration(audioDuration) }})</span>
+                <div
+                  class="d-flex align-items-center justify-content-between mb-3 p-3 bg-white rounded-4 border shadow-sm"
+                >
+                  <div class="d-flex align-items-center text-start">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                      <i class="bi bi-file-earmark-music text-primary h4 mb-0"></i>
+                    </div>
+                    <div>
+                      <div class="fw-bold text-dark text-truncate" style="max-width: 250px">
+                        {{ audioFile.name }}
+                      </div>
+                      <small class="text-muted">{{ formatDuration(audioDuration) }}</small>
+                    </div>
                   </div>
-                  <button class="btn btn-sm btn-outline-danger" @click="clearFile">
+                  <button class="btn btn-outline-danger btn-sm rounded-circle" @click="clearFile">
                     <i class="bi bi-x-lg"></i>
                   </button>
                 </div>
 
-                <!-- Audio Preview -->
-                <audio v-if="audioUrl" :src="audioUrl" controls class="w-100 mb-3"></audio>
+                <audio v-if="audioUrl" :src="audioUrl" controls class="w-100 mb-4 px-2"></audio>
 
                 <button
-                  class="btn btn-primary"
+                  class="btn btn-primary btn-lg rounded-pill px-5 shadow"
                   @click="startTranscription"
                   :disabled="isTranscribing || !audioFile || !patientName"
                 >
                   <span v-if="isTranscribing" class="spinner-border spinner-border-sm me-2"></span>
-                  <i v-else class="bi bi-play-fill me-2"></i>
-                  {{ isTranscribing ? 'Přepisování...' : 'Spustit přepis' }}
+                  <i v-else class="bi bi-play-circle-fill me-2"></i>
+                  {{ isTranscribing ? 'Probíhá přepis...' : 'Spustit analýzu sezení' }}
                 </button>
-
-                <p
-                  v-if="audioDuration > MAX_AUDIO_DURATION_SECONDS"
-                  class="text-warning small mt-2"
-                >
-                  <i class="bi bi-info-circle me-1"></i>
-                  Audio překračuje limit 24 minut. Lokální zpracování přejde na OMLX.
-                </p>
               </div>
-            </div>
-
-            <!-- Dev Text Paste (Development Only) -->
-            <div
-              class="dev-paste-card mt-3 p-3 border border-warning rounded bg-warning bg-opacity-10"
-            >
-              <div class="d-flex align-items-center mb-2">
-                <span class="badge bg-warning text-dark me-2">EXPERIMENTAL</span>
-                <small class="text-muted">Vložte přepsaný text přímo (test)</small>
-              </div>
-              <textarea
-                v-model="pastedText"
-                class="form-control form-control-sm mb-2"
-                rows="4"
-                placeholder="Vložte zde přepsaný text..."
-              ></textarea>
-              <button
-                class="btn btn-warning btn-sm"
-                @click="createChatFromPasted"
-                :disabled="!pastedText.trim() || !patientName"
-              >
-                <i class="bi bi-chat-dots me-1"></i>
-                Vytvořit chat z vloženého textu
-              </button>
-            </div>
-
-            <!-- Progress -->
-            <div v-if="isTranscribing" class="text-center py-3">
-              <div class="spinner-border text-primary mb-2"></div>
-              <p class="text-muted">{{ transcriptionStatus }}</p>
             </div>
 
             <!-- Results -->
-            <div v-if="transcriptionResult" class="mt-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">Přepis</h5>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-sm btn-outline-secondary" @click="copyToClipboard">
+            <div v-if="transcriptionResult" class="mt-4 fade-in">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Výsledek přepisu</h5>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-secondary px-3" @click="copyToClipboard">
                     <i class="bi bi-clipboard me-1"></i>Kopírovat
                   </button>
-                  <button class="btn btn-sm btn-outline-secondary" @click="downloadTranscript">
+                  <button class="btn btn-outline-secondary px-3" @click="downloadTranscript">
                     <i class="bi bi-download me-1"></i>Stáhnout
                   </button>
                 </div>
               </div>
 
-              <!-- Transcription Metrics -->
-              <div class="mb-3 p-3 bg-light rounded border">
-                <div class="row g-3">
-                  <div class="col-auto">
-                    <div class="d-flex align-items-center gap-2">
-                      <i class="bi bi-clock text-primary"></i>
-                      <div>
-                        <div class="small text-muted">Délka audia</div>
-                        <div class="fw-bold">{{ formatDuration(audioDuration) }}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <div class="d-flex align-items-center gap-2">
-                      <i class="bi bi-speedometer2 text-success"></i>
-                      <div>
-                        <div class="small text-muted">Čas přepisu (TTT)</div>
-                        <div class="fw-bold">{{ transcriptionTime }}s</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <div class="d-flex align-items-center gap-2">
-                      <i class="bi bi-bar-chart text-info"></i>
-                      <div>
-                        <div class="small text-muted">Poměr</div>
-                        <div class="fw-bold">{{ transcriptionRatio }}x</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                  <span class="text-muted small">
-                    <i class="bi bi-chat-quote me-1"></i>Přepsaný text
-                  </span>
-                  <span class="badge bg-info text-dark">{{
-                    useLocalModel ? 'WebGPU' : 'OMLX'
-                  }}</span>
-                </div>
-                <div class="card-body">
-                  <div class="p-3 bg-light rounded transcription-text">
-                    {{ formattedTranscription }}
-                  </div>
-                </div>
+              <div class="p-3 bg-light rounded-4 border mb-4 transcription-text shadow-inner">
+                {{ formattedTranscription }}
               </div>
             </div>
 
-            <!-- Chat Created Notification (shows for both transcription and pasted text) -->
+            <!-- Success Notification & Next Steps -->
             <div
               v-if="createdChat"
-              class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded"
+              class="mt-4 p-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 fade-in"
             >
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <i class="bi bi-check-circle text-success me-2"></i>
-                  <span class="text-success fw-semibold">Chatovací sezení vytvořeno!</span>
-                  <p class="mb-0 small text-muted">
-                    Pacient: {{ createdChat.patientName }} | ID:
-                    <code>{{ createdChat.chatId }}</code>
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-check-circle-fill text-success h4 mb-0 me-3"></i>
+                    <h5 class="text-success fw-bold mb-0">
+                      {{
+                        existingChatId
+                          ? 'Přepis byl přidán k sezení!'
+                          : 'Sezení bylo úspěšně vytvořeno!'
+                      }}
+                    </h5>
+                  </div>
+                  <p class="text-muted mb-3 mb-md-0">
+                    {{
+                      existingChatId
+                        ? 'Nyní můžete pokračovat k AI analýze v chatu.'
+                        : 'Nyní můžete pokračovat k AI analýze nebo požádat pacienta o vyplnění vstupního dotazníku.'
+                    }}
                   </p>
                 </div>
-                <router-link
-                  :to="`/doctor/chat/${createdChat.chatId}`"
-                  class="btn btn-success btn-sm"
-                >
-                  <i class="bi bi-chat-dots me-2"></i>Otevřít chat
-                </router-link>
+                <div class="col-md-4 text-md-end">
+                  <div class="d-grid gap-2">
+                    <router-link
+                      :to="`/doctor/chat/${createdChat.chatId}`"
+                      class="btn btn-success rounded-pill"
+                    >
+                      <i class="bi bi-chat-dots me-2"></i>Přejít do chatu
+                    </router-link>
+                    <button
+                      v-if="!existingChatId"
+                      class="btn btn-outline-success rounded-pill"
+                      @click="showQrModal = true"
+                    >
+                      <i class="bi bi-qr-code me-2"></i>Zobrazit QR kód
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- QR Modal -->
+    <BModal v-model="showQrModal" title="Vstupní dotazník pro pacienta" hide-footer centered>
+      <div v-if="createdChat">
+        <SurveyQRCode
+          :sessionId="createdChat.chatId"
+          :patientId="createdChat.patientId"
+          :patientName="createdChat.patientName"
+          :doctorId="'DOC-default'"
+        />
+        <div class="text-center mt-3 text-muted small">
+          Ukažte tento kód pacientovi pro vyplnění zpětné vazby.
+        </div>
+      </div>
+    </BModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { storageService } from '@/services/storageService'
+import { useClinicalData } from '@/composables/useClinicalData'
 import { useTranscription } from '@/composables/useTranscription'
 
-const MAX_AUDIO_DURATION_SECONDS = 24 * 60 // 24 minutes
-const CHAT_STORAGE_KEY = 'doctor_chats'
+const { startNewSession, appendTranscript } = useClinicalData()
+import SurveyQRCode from '@/components/SurveyQRCode.vue'
+
+const MAX_AUDIO_DURATION_SECONDS = 24 * 60
 
 const router = useRouter()
 const route = useRoute()
 
-const {
-  isLoading,
-  downloadProgress,
-  error,
-  useLocalModel,
-  loadModel,
-  transcribeFile,
-} = useTranscription()
+const { isLoading, downloadProgress, error, useLocalModel, loadModel, transcribeFile } =
+  useTranscription()
 
-// Patient details
+// Patient logic
+const isExistingPatient = ref(false)
+const patients = ref<any[]>([])
+const selectedPatientId = ref('')
 const patientName = ref('')
 const patientAge = ref<number | undefined>(undefined)
 const patientGender = ref('')
 const patientNotes = ref('')
 
-// Dev: Pasted text
-const pastedText = ref('')
-
-async function createChatFromPasted() {
-  if (!pastedText.value.trim() || !patientName.value) return
-
-  const chatId = generateChatId()
-  const chatData = {
-    chatId,
-    patientName: patientName.value,
-    patientAge: patientAge.value,
-    patientGender: patientGender.value,
-    patientNotes: patientNotes.value,
-    createdAt: new Date().toISOString(),
-    lastActivity: new Date().toISOString(),
-    transcript: pastedText.value,
-    messages: [
-      {
-        role: 'system',
-        content: `Patient: ${patientName.value}${patientAge.value ? `, Age: ${patientAge.value}` : ''}${patientGender.value ? `, Gender: ${patientGender.value}` : ''}${patientNotes.value ? `\nNotes: ${patientNotes.value}` : ''}`,
-      },
-      {
-        role: 'user',
-        content: `[Audio Transcript]\n\n${pastedText.value}`,
-        timestamp: new Date().toISOString(),
-      },
-    ],
+async function loadPatients() {
+  try {
+    patients.value = await storageService.getPatients()
+  } catch (e) {
+    console.error('[Transcription] Load patients failed:', e)
   }
+}
 
-  saveChatToLocalStorage(chatData)
-
-  createdChat.value = {
-    chatId,
-    patientName: patientName.value,
+function syncPatientInfo() {
+  const p = patients.value.find((p) => p.id === selectedPatientId.value)
+  if (p) {
+    patientName.value = p.name
+    patientAge.value = p.age
+    patientGender.value = p.gender
   }
 }
 
@@ -370,55 +341,57 @@ const transcriptionResult = ref('')
 const transcriptionStartTime = ref(0)
 const transcriptionEndTime = ref(0)
 const webGpuModelReady = ref(false)
+const showQrModal = ref(false)
+
+// Existing chat prefill
+const existingChatId = ref('')
 
 // Created chat
-const createdChat = ref<{ chatId: string; patientName: string } | null>(null)
+const createdChat = ref<{ chatId: string; patientName: string; patientId: string } | null>(null)
 
-// Format transcription - replace SentencePiece ▁ with spaces
 const formattedTranscription = computed(() => {
   return transcriptionResult.value.replace(/▁/g, ' ').trim()
 })
 
-// Transcription time metrics
-const transcriptionTime = computed(() => {
-  if (!transcriptionEndTime.value || !transcriptionStartTime.value) return 0
-  return Math.round((transcriptionEndTime.value - transcriptionStartTime.value) / 1000)
-})
-
-const transcriptionRatio = computed(() => {
-  if (!transcriptionTime.value || !audioDuration.value) return 0
-  return (audioDuration.value / transcriptionTime.value).toFixed(1)
-})
-
 onMounted(() => {
+  loadPatients()
   const notesParam = route.query.notes as string
   if (notesParam) {
     patientNotes.value = decodeURIComponent(notesParam)
+  }
+
+  const chatIdParam = route.query.chatId as string
+  if (chatIdParam) {
+    existingChatId.value = chatIdParam
+    isExistingPatient.value = false
+
+    const nameParam = route.query.patientName as string
+    const ageParam = route.query.patientAge as string
+    const genderParam = route.query.patientGender as string
+    const notesParam = route.query.patientNotes as string
+
+    if (nameParam) patientName.value = decodeURIComponent(nameParam)
+    if (ageParam) patientAge.value = parseInt(ageParam) || undefined
+    if (genderParam) patientGender.value = decodeURIComponent(genderParam)
+    if (notesParam) patientNotes.value = decodeURIComponent(notesParam)
   }
 })
 
 async function loadTranscriptionModel() {
   const result = await loadModel()
-  if (result) {
-    webGpuModelReady.value = true
-  }
+  if (result) webGpuModelReady.value = true
 }
 
 function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
-  if (target.files && target.files[0]) {
-    setAudioFile(target.files[0])
-  }
+  if (target.files?.[0]) setAudioFile(target.files[0])
 }
 
-// Drag counter to handle child elements
 let dragCounter = 0
-
 function handleDragEnter() {
   dragCounter++
   isDragging.value = true
 }
-
 function handleDragLeave() {
   dragCounter--
   if (dragCounter <= 0) {
@@ -426,13 +399,10 @@ function handleDragLeave() {
     isDragging.value = false
   }
 }
-
 function handleDrop(event: DragEvent) {
   dragCounter = 0
   isDragging.value = false
-  if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
-    setAudioFile(event.dataTransfer.files[0])
-  }
+  if (event.dataTransfer?.files?.[0]) setAudioFile(event.dataTransfer.files[0])
 }
 
 function setAudioFile(file: File) {
@@ -440,15 +410,9 @@ function setAudioFile(file: File) {
     alert('Vyberte prosím audio soubor')
     return
   }
-
-  // Clean up previous URL
-  if (audioUrl.value) {
-    URL.revokeObjectURL(audioUrl.value)
-  }
-
+  if (audioUrl.value) URL.revokeObjectURL(audioUrl.value)
   audioFile.value = file
   audioUrl.value = URL.createObjectURL(file)
-
   const audio = new Audio()
   audio.src = audioUrl.value
   audio.onloadedmetadata = () => {
@@ -457,9 +421,7 @@ function setAudioFile(file: File) {
 }
 
 function clearFile() {
-  if (audioUrl.value) {
-    URL.revokeObjectURL(audioUrl.value)
-  }
+  if (audioUrl.value) URL.revokeObjectURL(audioUrl.value)
   audioFile.value = null
   audioUrl.value = ''
   audioDuration.value = 0
@@ -467,98 +429,87 @@ function clearFile() {
   createdChat.value = null
 }
 
-// Watch mode toggle to reset WebGPU ready state
-watch(useLocalModel, (newVal) => {
-  if (!newVal) {
-    // Switched to OMLX mode
-    webGpuModelReady.value = false
-  }
-})
-
-// Auto-dismiss chat notification after 10 seconds
-watch(createdChat, (newVal) => {
-  if (newVal) {
-    setTimeout(() => {
-      createdChat.value = null
-    }, 10000)
-  }
-})
-
-function saveChatToLocalStorage(chatData: any) {
-  try {
-    const existingChats = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]')
-    existingChats.unshift(chatData)
-    // Keep only last 50 chats
-    if (existingChats.length > 50) {
-      existingChats.splice(50)
-    }
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(existingChats))
-  } catch (e) {
-    console.error('[Transcription] Failed to save chat:', e)
-  }
-}
-
 async function startTranscription() {
   if (!audioFile.value || !patientName.value) return
 
   isTranscribing.value = true
-  transcriptionStatus.value = 'Processing audio...'
+  transcriptionStatus.value = 'Zpracování audia...'
   transcriptionResult.value = ''
   createdChat.value = null
   transcriptionStartTime.value = Date.now()
-  transcriptionEndTime.value = 0
 
   try {
     const result = await transcribeFile(audioFile.value, (status) => {
       transcriptionStatus.value = status
     })
+
+    if (!result || !result.text) {
+      throw new Error('Nepodařilo se získat text z audia.')
+    }
+
     transcriptionResult.value = result.text
     transcriptionEndTime.value = Date.now()
+    const now = new Date().toISOString()
 
-    const originalLength = audioDuration.value
-    const transcribeTime = Math.round(
-      (transcriptionEndTime.value - transcriptionStartTime.value) / 1000,
-    )
-    transcriptionStatus.value = `✓ Hotovo! (délka: ${formatDuration(originalLength)}, TTT: ${transcribeTime}s)`
-
-    // Create chat session
-    const chatId = generateChatId()
-    const chatData = {
-      chatId,
-      patientName: patientName.value,
-      patientAge: patientAge.value,
-      patientGender: patientGender.value,
-      patientNotes: patientNotes.value,
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-      transcript: result.text,
-      messages: [
-        {
-          role: 'system',
-          content: `Patient: ${patientName.value}${patientAge.value ? `, Age: ${patientAge.value}` : ''}${patientGender.value ? `, Gender: ${patientGender.value}` : ''}${patientNotes.value ? `\nNotes: ${patientNotes.value}` : ''}`,
-        },
-        {
-          role: 'user',
-          content: `[Audio Transcript]\n\n${result.text}`,
-          timestamp: new Date().toISOString(),
-        },
-      ],
+    if (existingChatId.value) {
+      await handleExistingSessionUpdate(result.text, now)
+    } else {
+      await handleNewSessionCreation(result.text, now)
     }
-
-    saveChatToLocalStorage(chatData)
-
-    createdChat.value = {
-      chatId,
-      patientName: patientName.value,
-    }
-  } catch (error: any) {
-    console.error('[Transcription] Error:', error)
-    transcriptionResult.value = `Transcription failed: ${error.message}`
+  } catch (err: any) {
+    console.error('[Transcription] Error:', err)
+    transcriptionStatus.value = `Chyba při přepisu: ${err.message}`
+    alert(`Analýza selhala: ${err.message}`)
   } finally {
     isTranscribing.value = false
   }
 }
 
+async function handleExistingSessionUpdate(transcript: string, timestamp: string) {
+  try {
+    const session = await appendTranscript(existingChatId.value, transcript)
+
+    let analysis = session.ai_analysis
+    if (typeof analysis === 'string') analysis = JSON.parse(analysis)
+
+    createdChat.value = {
+      chatId: session.session_id,
+      patientName: analysis?.patientName || 'Pacient',
+      patientId: session.patient_id
+    }
+  } catch (e: any) {
+    console.error('[Transcription] Failed to update session:', e)
+    throw e
+  }
+}
+
+async function handleNewSessionCreation(transcript: string, timestamp: string) {
+  try {
+    const { session, patientId } = await startNewSession({
+      patientId: isExistingPatient.value ? selectedPatientId.value : undefined,
+      patientData: isExistingPatient.value ? undefined : {
+        name: patientName.value,
+        age: patientAge.value,
+        gender: patientGender.value,
+        notes: patientNotes.value,
+      },
+      transcript: transcript,
+      notes: patientNotes.value
+    })
+
+    let analysis = session.ai_analysis
+    if (typeof analysis === 'string') analysis = JSON.parse(analysis)
+
+    createdChat.value = {
+      chatId: session.session_id,
+      patientName: analysis?.patientName || patientName.value,
+      patientId: patientId,
+    }
+  } catch (e: any) {
+    console.error('[Transcription] Failed to create new session:', e)
+    throw e
+  }
+}
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
@@ -568,45 +519,89 @@ function formatDuration(seconds: number): string {
 function copyToClipboard() {
   navigator.clipboard.writeText(transcriptionResult.value)
 }
-
 function downloadTranscript() {
   const blob = new Blob([transcriptionResult.value], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `transcript-${Date.now()}.txt`
+  a.download = `pripis-${patientName.value}-${new Date().toISOString().split('T')[0]}.txt`
   a.click()
   URL.revokeObjectURL(url)
-}
-
-function generateChatId(): string {
-  return (
-    'CHAT-' +
-    Date.now().toString(36).toUpperCase() +
-    '-' +
-    Math.random().toString(36).substring(2, 6).toUpperCase()
-  )
 }
 </script>
 
 <style scoped>
 .upload-area {
-  border: 2px dashed #dee2e6;
-  border-radius: 12px;
+  border: 2px dashed #e2e8f0;
   transition: all 0.3s ease;
+  background: #f8fafc;
 }
 
 .upload-area:hover {
-  border-color: #2c5282;
-}
-
-.upload-area.border-primary {
-  border-style: solid;
+  border-color: var(--bs-primary);
+  background: #f1f5f9;
 }
 
 .transcription-text {
   white-space: pre-wrap;
-  max-height: 400px;
+  max-height: 300px;
   overflow-y: auto;
+}
+
+.shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
+
+<style scoped>
+.upload-area {
+  border: 2px dashed #e2e8f0;
+  transition: all 0.3s ease;
+  background: #f8fafc;
+}
+
+.upload-area:hover {
+  border-color: var(--bs-primary);
+  background: #f1f5f9;
+}
+
+.transcription-text {
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

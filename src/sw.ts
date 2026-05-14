@@ -11,15 +11,22 @@ self.addEventListener('install', (event: ExtendableEvent) => {
       try {
         const response = await fetch('/cache-manifest.json')
         if (!response.ok) throw new Error('Manifest not found')
+        
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+           throw new Error('Manifest is not JSON (likely security challenge)')
+        }
 
         const assets: string[] = await response.json()
 
         // Deduplicate and add root/assets AND the manifests to cache
+        // Note: Using both potential manifest names to be safe
         const toCache = new Set([
           '/',
           '/index.html',
           '/cache-manifest.json',
           '/manifest.webmanifest',
+          '/favicon_io/site.webmanifest',
           ...assets,
         ])
         await cache.addAll(Array.from(toCache))
@@ -62,6 +69,17 @@ self.addEventListener('fetch', (event: FetchEvent) => {
         .then((networkResponse) => {
           // If network is up, update cache for next time
           if (networkResponse.ok) {
+            const contentType = networkResponse.headers.get('content-type')
+            const isHtml = contentType && contentType.includes('text/html')
+            const expectsHtml = event.request.headers.get('Accept')?.includes('text/html')
+
+            // SAFETY: Never cache HTML unless we explicitly expected it (e.g. index.html)
+            // This prevents InfinityFree's 'aes.js' challenge from poisoning the cache
+            if (isHtml && !expectsHtml && !event.request.url.endsWith('/') && !event.request.url.endsWith('index.html')) {
+              console.warn('PWA: Refusing to cache HTML for non-HTML request:', event.request.url)
+              return networkResponse
+            }
+
             cache.put(event.request, networkResponse.clone())
           }
           return networkResponse
