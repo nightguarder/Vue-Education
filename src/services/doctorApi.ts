@@ -1,5 +1,31 @@
 const API_BASE = '/api'
 
+/**
+ * Robust fetch wrapper that handles non-JSON responses (e.g. InfinityFree security pages)
+ */
+async function safeFetch(url: string, options?: RequestInit) {
+  const response = await fetch(url, options)
+  
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status}`)
+  }
+
+  const contentType = response.headers.get('content-type')
+  if (!contentType || !contentType.includes('application/json')) {
+    const text = await response.text()
+    
+    // Detect InfinityFree security challenge
+    if (text.includes('aes.js') || text.includes('__test')) {
+      throw new Error('Security challenge active. Please refresh the page.')
+    }
+
+    console.warn('Expected JSON but received:', text.substring(0, 100))
+    throw new Error('Server returned invalid data format (HTML instead of JSON)')
+  }
+
+  return await response.json()
+}
+
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
@@ -42,13 +68,11 @@ export const doctorApi = {
    * Saves or updates a clinical session
    */
   async saveSession(session: ClinicalSession): Promise<any> {
-    const response = await fetch(`${API_BASE}/sessions`, {
+    return await safeFetch(`${API_BASE}/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(session)
     })
-    if (!response.ok) throw new Error('Failed to save session')
-    return await response.json()
   },
 
   /**
@@ -61,20 +85,16 @@ export const doctorApi = {
     if (doctorId) params.append('doctor_id', doctorId)
     if (params.toString()) url += `?${params.toString()}`
 
-    const response = await fetch(url)
-    if (!response.ok) throw new Error('Failed to fetch sessions')
-    return await response.json()
+    return await safeFetch(url)
   },
 
   /**
    * Delete a session
    */
   async deleteSession(sessionId: string): Promise<any> {
-    const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+    return await safeFetch(`${API_BASE}/sessions/${sessionId}`, {
       method: 'DELETE'
     })
-    if (!response.ok) throw new Error('Failed to delete session')
-    return await response.json()
   },
 
   /**
@@ -91,42 +111,34 @@ export const doctorApi = {
     if (query) params.append('q', query)
     if (params.toString()) url += `?${params.toString()}`
 
-    const response = await fetch(url)
-    if (!response.ok) throw new Error('Failed to fetch patients')
-    return await response.json()
+    return await safeFetch(url)
   },
 
   /**
    * Get a single patient by ID
    */
   async getPatient(patientId: string): Promise<Patient> {
-    const response = await fetch(`${API_BASE}/patients/${patientId}`)
-    if (!response.ok) throw new Error('Failed to fetch patient')
-    return await response.json()
+    return await safeFetch(`${API_BASE}/patients/${patientId}`)
   },
 
   /**
    * Save or update a patient record
    */
   async savePatient(patient: Patient): Promise<any> {
-    const response = await fetch(`${API_BASE}/patients`, {
+    return await safeFetch(`${API_BASE}/patients`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patient)
     })
-    if (!response.ok) throw new Error('Failed to save patient')
-    return await response.json()
   },
 
   /**
    * Delete a patient (soft delete)
    */
   async deletePatient(patientId: string): Promise<any> {
-    const response = await fetch(`${API_BASE}/patients/${patientId}`, {
+    return await safeFetch(`${API_BASE}/patients/${patientId}`, {
       method: 'DELETE'
     })
-    if (!response.ok) throw new Error('Failed to delete patient')
-    return await response.json()
   },
 
   /**
@@ -134,9 +146,7 @@ export const doctorApi = {
    */
   async getSurveys(doctorId?: string, type: 'all' | 'general' | 'personalized' = 'all'): Promise<any[]> {
     const url = `${API_BASE}/surveys?type=${type}${doctorId ? `&doctor_id=${doctorId}` : ''}`
-    const response = await fetch(url)
-    if (!response.ok) throw new Error('Failed to fetch surveys')
-    return await response.json()
+    return await safeFetch(url)
   },
 
   /**
@@ -145,64 +155,52 @@ export const doctorApi = {
   async getWorksheets(patientId?: string): Promise<any[]> {
     let url = `${API_BASE}/worksheets`
     if (patientId) url += `?patient_id=${patientId}`
-    const response = await fetch(url)
-    if (!response.ok) throw new Error('Failed to fetch worksheets')
-    return await response.json()
+    return await safeFetch(url)
   },
 
   /**
    * Creates a dynamic worksheet for a patient
    */
   async createWorksheet(data: { patient_id: string; session_id: string; content: any }): Promise<any> {
-    const response = await fetch(`${API_BASE}/worksheets`, {
+    return await safeFetch(`${API_BASE}/worksheets`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     })
-    if (!response.ok) throw new Error('Failed to create worksheet')
-    return await response.json()
   },
 
   /**
    * Delete a worksheet
    */
   async deleteWorksheet(id: string): Promise<any> {
-    const response = await fetch(`${API_BASE}/worksheets/${id}`, {
+    return await safeFetch(`${API_BASE}/worksheets/${id}`, {
       method: 'DELETE'
     })
-    if (!response.ok) throw new Error('Failed to delete worksheet')
-    return await response.json()
   },
 
   /**
    * Get vacation settings (total days, used, etc.)
    */
   async getVacationSettings(doctorId: string = 'DOC-default'): Promise<any> {
-    const response = await fetch(`${API_BASE}/vacations/settings?doctor_id=${doctorId}`)
-    if (!response.ok) throw new Error('Failed to fetch vacation settings')
-    return await response.json()
+    return await safeFetch(`${API_BASE}/vacations/settings?doctor_id=${doctorId}`)
   },
 
   /**
    * Update vacation settings
    */
   async updateVacationSettings(doctorId: string = 'DOC-default', settings: { total_days: number }): Promise<any> {
-    const response = await fetch(`${API_BASE}/vacations/settings`, {
+    return await safeFetch(`${API_BASE}/vacations/settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ doctor_id: doctorId, ...settings })
     })
-    if (!response.ok) throw new Error('Failed to update vacation settings')
-    return await response.json()
   },
 
   /**
    * Get all vacations for a doctor
    */
   async getVacations(doctorId: string = 'DOC-default'): Promise<any[]> {
-    const response = await fetch(`${API_BASE}/vacations?doctor_id=${doctorId}`)
-    if (!response.ok) throw new Error('Failed to fetch vacations')
-    return await response.json()
+    return await safeFetch(`${API_BASE}/vacations?doctor_id=${doctorId}`)
   },
 
   /**
@@ -214,13 +212,11 @@ export const doctorApi = {
     end_date: string
     reason: 'vacation' | 'sick' | 'personal' | 'other'
   }): Promise<any> {
-    const response = await fetch(`${API_BASE}/vacations`, {
+    return await safeFetch(`${API_BASE}/vacations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(vacation)
     })
-    if (!response.ok) throw new Error('Failed to add vacation')
-    return await response.json()
   },
 
   /**
@@ -232,33 +228,27 @@ export const doctorApi = {
     reason?: string
     status?: 'active' | 'cancelled'
   }): Promise<any> {
-    const response = await fetch(`${API_BASE}/vacations/${id}`, {
+    return await safeFetch(`${API_BASE}/vacations/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
     })
-    if (!response.ok) throw new Error('Failed to update vacation')
-    return await response.json()
   },
 
   /**
    * Delete a vacation
    */
   async deleteVacation(id: number): Promise<any> {
-    const response = await fetch(`${API_BASE}/vacations/${id}`, {
+    return await safeFetch(`${API_BASE}/vacations/${id}`, {
       method: 'DELETE'
     })
-    if (!response.ok) throw new Error('Failed to delete vacation')
-    return await response.json()
   },
 
   /**
    * Get all published blog posts
    */
   async getBlogPosts(): Promise<any[]> {
-    const response = await fetch(`${API_BASE}/blog-posts`)
-    if (!response.ok) throw new Error('Failed to fetch blog posts')
-    return await response.json()
+    return await safeFetch(`${API_BASE}/blog-posts`)
   },
 
   /**
@@ -270,36 +260,30 @@ export const doctorApi = {
     type?: string
     figures?: any[]
   }): Promise<any> {
-    const response = await fetch(`${API_BASE}/blog-posts`, {
+    return await safeFetch(`${API_BASE}/blog-posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(post)
     })
-    if (!response.ok) throw new Error('Failed to publish blog post')
-    return await response.json()
   },
 
   /**
    * Delete a blog post
    */
   async deleteBlogPost(id: number): Promise<any> {
-    const response = await fetch(`${API_BASE}/blog-posts/${id}`, {
+    return await safeFetch(`${API_BASE}/blog-posts/${id}`, {
       method: 'DELETE'
     })
-    if (!response.ok) throw new Error('Failed to delete blog post')
-    return await response.json()
   },
 
   /**
    * Save a survey response
    */
   async saveSurvey(survey: any): Promise<any> {
-    const response = await fetch(`${API_BASE}/surveys`, {
+    return await safeFetch(`${API_BASE}/surveys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(survey)
     })
-    if (!response.ok) throw new Error('Failed to save survey')
-    return await response.json()
   }
 }

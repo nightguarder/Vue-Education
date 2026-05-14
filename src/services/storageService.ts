@@ -15,16 +15,39 @@ const KEYS = {
   VACATIONS: 'v_edu_vacations',
   SURVEYS: 'v_edu_surveys',
   BLOG_POSTS: 'v_edu_blog_posts',
+  AUTO_SYNC: "v_edu_auto_sync",
+  USE_OFFLINE: "v_edu_use_offline"
 }
 
 class StorageService {
   private _isOnline = ref(navigator.onLine)
   private _pendingCount = ref(0)
   private _isSyncing = ref(false)
+  private _autoSync = ref(localStorage.getItem(KEYS.AUTO_SYNC) !== 'false')
+  private _useOffline = ref(localStorage.getItem(KEYS.USE_OFFLINE) === 'true')
+  
+  // In-memory cache to avoid redundant decryptions
+  private _cache: Record<string, SyncItem<any>[]> = {}
 
   public isOnline = computed(() => this._isOnline.value)
   public pendingCount = computed(() => this._pendingCount.value)
   public isSyncing = computed(() => this._isSyncing.value)
+  public autoSync = computed({
+    get: () => this._autoSync.value,
+    set: (val: boolean) => {
+      this._autoSync.value = val
+      localStorage.setItem(KEYS.AUTO_SYNC, String(val))
+    }
+  })
+  public useOffline = computed({
+    get: () => this._useOffline.value,
+    set: (val: boolean) => {
+      this._useOffline.value = val
+      localStorage.setItem(KEYS.USE_OFFLINE, String(val))
+      if (val) this._isOnline.value = false
+      else this._isOnline.value = navigator.onLine
+    }
+  })
 
   constructor() {
     this.init()
@@ -33,24 +56,37 @@ class StorageService {
   private async init() {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
-        this._isOnline.value = true
-        this.syncAll()
+        if (!this._useOffline.value) {
+          this._isOnline.value = true
+          if (this._autoSync.value) this.syncAll()
+        }
       })
       window.addEventListener('offline', () => {
         this._isOnline.value = false
       })
     }
-    await this.updatePendingCount()
-    if (this._isOnline.value) {
-      this.syncAll()
-    }
+    
+    // Non-blocking initialization
+    setTimeout(async () => {
+      await this.updatePendingCount()
+      if (this._isOnline.value && this._autoSync.value && !this._useOffline.value) {
+        await this.syncAll()
+      }
+    }, 1000)
   }
 
   async updatePendingCount() {
     let count = 0
-    for (const key of Object.values(KEYS)) {
-      const items = await this.getLocal(key)
-      count += items.filter(item => item.syncStatus !== 'synced').length
+    try {
+      for (const key of Object.values(KEYS)) {
+        if (key === KEYS.AUTO_SYNC || key === KEYS.USE_OFFLINE) continue
+        const items = await this.getLocal(key)
+        if (Array.isArray(items)) {
+          count += items.filter(item => item && item.syncStatus !== 'synced').length
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to update pending count:', err)
     }
     this._pendingCount.value = count
   }
@@ -102,6 +138,7 @@ class StorageService {
 
   async getSessions(): Promise<ClinicalSession[]> {
     try {
+      if (this._useOffline.value) throw new Error('Offline mode')
       const remote = await doctorApi.getSessions()
       const local = await this.getLocal<ClinicalSession>(KEYS.CHATS)
       const merged = this.mergeCollections(local, remote, 'session_id')
@@ -130,7 +167,7 @@ class StorageService {
     await this.saveLocal(KEYS.CHATS, local)
     await this.updatePendingCount()
 
-    if (this._isOnline.value) {
+    if (this._isOnline.value && !this._useOffline.value) {
       try {
         const saved = await doctorApi.saveSession(session)
         const updatedLocal = await this.getLocal<ClinicalSession>(KEYS.CHATS)
@@ -153,7 +190,7 @@ class StorageService {
     await this.saveLocal(KEYS.CHATS, updated)
     await this.updatePendingCount()
     
-    if (this._isOnline.value) {
+    if (this._isOnline.value && !this._useOffline.value) {
       try {
         await doctorApi.deleteSession(sessionId)
       } catch {
@@ -164,6 +201,7 @@ class StorageService {
 
   async getPatients(): Promise<Patient[]> {
     try {
+      if (this._useOffline.value) throw new Error('Offline mode')
       const remote = await doctorApi.getPatients()
       const local = await this.getLocal<Patient>(KEYS.PATIENTS)
       const merged = this.mergeCollections(local, remote, 'patient_id')
@@ -192,7 +230,7 @@ class StorageService {
     await this.saveLocal(KEYS.PATIENTS, local)
     await this.updatePendingCount()
 
-    if (this._isOnline.value) {
+    if (this._isOnline.value && !this._useOffline.value) {
       try {
         const saved = await doctorApi.savePatient(patient)
         const updatedLocal = await this.getLocal<Patient>(KEYS.PATIENTS)
@@ -215,7 +253,7 @@ class StorageService {
     await this.saveLocal(KEYS.PATIENTS, updated)
     await this.updatePendingCount()
     
-    if (this._isOnline.value) {
+    if (this._isOnline.value && !this._useOffline.value) {
       try {
         await doctorApi.deletePatient(patientId)
       } catch {
@@ -226,6 +264,7 @@ class StorageService {
 
   async getWorksheets(patientId?: string): Promise<any[]> {
     try {
+      if (this._useOffline.value) throw new Error('Offline mode')
       const remote = await doctorApi.getWorksheets(patientId)
       const local = await this.getLocal<any>(KEYS.WORKSHEETS)
       const merged = this.mergeCollections(local, remote, 'id')
@@ -247,7 +286,7 @@ class StorageService {
     await this.saveLocal(KEYS.WORKSHEETS, local)
     await this.updatePendingCount()
     
-    if (this._isOnline.value) {
+    if (this._isOnline.value && !this._useOffline.value) {
       try {
         const saved = await doctorApi.createWorksheet(data)
         const updatedLocal = await this.getLocal<any>(KEYS.WORKSHEETS)
@@ -270,7 +309,7 @@ class StorageService {
     await this.saveLocal(KEYS.WORKSHEETS, updated)
     await this.updatePendingCount()
     
-    if (this._isOnline.value) {
+    if (this._isOnline.value && !this._useOffline.value) {
       try {
         await doctorApi.deleteWorksheet(id)
       } catch {
@@ -281,6 +320,7 @@ class StorageService {
 
   async getSurveys(): Promise<any[]> {
     try {
+      if (this._useOffline.value) throw new Error('Offline mode')
       const remote = await doctorApi.getSurveys()
       const local = await this.getLocal<any>(KEYS.SURVEYS)
       // Surveys are mostly append-only for local, but we merge to get all
@@ -300,7 +340,7 @@ class StorageService {
     await this.saveLocal(KEYS.SURVEYS, local)
     await this.updatePendingCount()
     
-    if (this._isOnline.value) {
+    if (this._isOnline.value && !this._useOffline.value) {
       try {
         await doctorApi.saveSurvey(survey)
         const updated = await this.getLocal<any>(KEYS.SURVEYS)
@@ -313,6 +353,7 @@ class StorageService {
   }
 
   async checkDbConnection(): Promise<boolean> {
+    if (this._useOffline.value) return false
     if (!navigator.onLine) return false
     try {
       const controller = new AbortController()
@@ -334,6 +375,7 @@ class StorageService {
 
   async getVacations(): Promise<any[]> {
     try {
+      if (this._useOffline.value) throw new Error('Offline mode')
       return await doctorApi.getVacations()
     } catch {
       const local = await this.getLocal<any>(KEYS.VACATIONS)
@@ -352,23 +394,28 @@ class StorageService {
     local.push(newItem)
     await this.saveLocal(KEYS.VACATIONS, local)
     await this.updatePendingCount()
-    try {
-      const result = await doctorApi.addVacation(vacation)
-      const updatedLocal = await this.getLocal<any>(KEYS.VACATIONS)
-      const item = updatedLocal.find((item) => item.data.id === tempId)
-      if (item) {
-        item.data = result
-        item.syncStatus = 'synced'
-        await this.saveLocal(KEYS.VACATIONS, updatedLocal)
+
+    if (this._isOnline.value && !this._useOffline.value) {
+      try {
+        const result = await doctorApi.addVacation(vacation)
+        const updatedLocal = await this.getLocal<any>(KEYS.VACATIONS)
+        const item = updatedLocal.find((item) => item.data.id === tempId)
+        if (item) {
+          item.data = result
+          item.syncStatus = 'synced'
+          await this.saveLocal(KEYS.VACATIONS, updatedLocal)
+        }
+        return result
+      } catch {
+        return newItem.data
       }
-      return result
-    } catch {
-      return newItem.data
     }
+    return newItem.data
   }
 
   async getBlogPosts(): Promise<any[]> {
     try {
+      if (this._useOffline.value) throw new Error('Offline mode')
       return await doctorApi.getBlogPosts()
     } catch {
       const local = await this.getLocal<any>(KEYS.BLOG_POSTS)
@@ -381,17 +428,21 @@ class StorageService {
     local.push({ data: post, syncStatus: 'pending', lastUpdated: new Date().toISOString() })
     await this.saveLocal(KEYS.BLOG_POSTS, local)
     await this.updatePendingCount()
-    try {
-      await doctorApi.publishBlogPost(post)
-      const updated = await this.getLocal<any>(KEYS.BLOG_POSTS)
-      const item = updated.find((i) => i.data.id === post.id)
-      if (item) item.syncStatus = 'synced'
-      await this.saveLocal(KEYS.BLOG_POSTS, updated)
-    } catch { /* deferred */ }
+    
+    if (this._isOnline.value && !this._useOffline.value) {
+      try {
+        await doctorApi.publishBlogPost(post)
+        const updated = await this.getLocal<any>(KEYS.BLOG_POSTS)
+        const item = updated.find((i) => i.data.id === post.id)
+        if (item) item.syncStatus = 'synced'
+        await this.saveLocal(KEYS.BLOG_POSTS, updated)
+      } catch { /* deferred */ }
+    }
+    await this.updatePendingCount()
   }
 
   async syncAll(): Promise<void> {
-    if (this._isSyncing.value || !this._isOnline.value) return
+    if (this._isSyncing.value || !this._isOnline.value || this._useOffline.value) return
     this._isSyncing.value = true
     try {
       await Promise.all([
@@ -450,11 +501,20 @@ class StorageService {
   }
 
   private async getLocal<T>(key: string): Promise<SyncItem<T>[]> {
+    // Return from cache if available
+    if (this._cache[key]) {
+      return this._cache[key]
+    }
+
     try {
       const encrypted = localStorage.getItem(key)
       if (!encrypted) return []
       const decrypted = await encryption.decrypt(encrypted)
-      return Array.isArray(decrypted) ? decrypted : []
+      const items = Array.isArray(decrypted) ? decrypted : []
+      
+      // Update cache
+      this._cache[key] = items
+      return items
     } catch {
       return []
     }
@@ -462,6 +522,9 @@ class StorageService {
 
   private async saveLocal<T>(key: string, items: SyncItem<T>[]): Promise<void> {
     try {
+      // Update cache immediately
+      this._cache[key] = items
+      
       const encrypted = await encryption.encrypt(items)
       localStorage.setItem(key, encrypted)
     } catch (e) {

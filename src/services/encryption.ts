@@ -4,34 +4,55 @@
  */
 
 const ENCRYPTION_KEY_NAME = 'v-edu-k'
+let cachedKey: CryptoKey | null = null
 
-async function getOrCreateKey(): Promise<CryptoKey> {
+async function getOrCreateKey(): Promise<CryptoKey | null> {
+  if (cachedKey) return cachedKey
+
+  if (!crypto || !crypto.subtle) {
+    console.warn('Crypto Subtle is not available. Data will not be encrypted.')
+    return null
+  }
+
   const storedKey = localStorage.getItem(ENCRYPTION_KEY_NAME)
   if (storedKey) {
-    const keyData = JSON.parse(storedKey)
-    return await crypto.subtle.importKey(
-      'jwk',
-      keyData,
-      { name: 'AES-GCM' },
+    try {
+      const keyData = JSON.parse(storedKey)
+      cachedKey = await crypto.subtle.importKey(
+        'jwk',
+        keyData,
+        { name: 'AES-GCM' },
+        true,
+        ['encrypt', 'decrypt']
+      )
+      return cachedKey
+    } catch (e) {
+      console.error('Failed to import existing key:', e)
+    }
+  }
+
+  try {
+    const key = await crypto.subtle.generateKey(
+      { name: 'AES-GCM', length: 256 },
       true,
       ['encrypt', 'decrypt']
     )
+    const exported = await crypto.subtle.exportKey('jwk', key)
+    localStorage.setItem(ENCRYPTION_KEY_NAME, JSON.stringify(exported))
+    cachedKey = key
+    return key
+  } catch (e) {
+    console.error('Key generation failed:', e)
+    return null
   }
-
-  const key = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt']
-  )
-  const exported = await crypto.subtle.exportKey('jwk', key)
-  localStorage.setItem(ENCRYPTION_KEY_NAME, JSON.stringify(exported))
-  return key
 }
 
 export const encryption = {
   async encrypt(data: any): Promise<string> {
     try {
       const key = await getOrCreateKey()
+      if (!key) return JSON.stringify(data)
+
       const iv = crypto.getRandomValues(new Uint8Array(12))
       const encoded = new TextEncoder().encode(JSON.stringify(data))
       
@@ -49,22 +70,40 @@ export const encryption = {
       return btoa(String.fromCharCode(...combined))
     } catch (e) {
       console.error('Encryption failed:', e)
-      return JSON.stringify(data) // Fallback to plain if fails (should not happen in modern browsers)
+      return JSON.stringify(data) 
     }
   },
 
   async decrypt(encryptedStr: string): Promise<any> {
     try {
-      if (!encryptedStr.endsWith('=') && !encryptedStr.match(/^[A-Za-z0-9+/]+$/)) {
-        // Likely not encrypted or old data
-        return JSON.parse(encryptedStr)
-      }
+      if (!encryptedStr || typeof encryptedStr !== 'string') return null
 
       const key = await getOrCreateKey()
-      const combined = new Uint8Array(
-        atob(encryptedStr).split('').map(c => c.charCodeAt(0))
-      )
       
+      // If no key (non-secure context), assume data is plain JSON
+      if (!key) return JSON.parse(encryptedStr)
+
+      // Check if it's likely AES-GCM combined format
+      const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(encryptedStr)
+      if (!isBase64 || encryptedStr.length < 16) {
+        try {
+          return JSON.parse(encryptedStr)
+        } catch {
+          return null
+        }
+      }
+      
+      // ... rest of decryption logic
+      
+      // Safer decoding
+      const binaryStr = atob(encryptedStr)
+      const combined = new Uint8Array(binaryStr.length)
+      for (let i = 0; i < binaryStr.length; i++) {
+        combined[i] = binaryStr.charCodeAt(i)
+      }
+      
+      if (combined.length < 13) throw new Error('Invalid encrypted format')
+
       const iv = combined.slice(0, 12)
       const ciphertext = combined.slice(12)
       
@@ -80,7 +119,7 @@ export const encryption = {
       try {
         return JSON.parse(encryptedStr)
       } catch {
-        console.error('Decryption failed:', e)
+        // console.error('Decryption failed:', e)
         return null
       }
     }

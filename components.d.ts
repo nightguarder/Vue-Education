@@ -33,7 +33,4 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SurveyQRCode: typeof import('./src/components/SurveyQRCode.vue')['default']
   }
-  export interface GlobalDirectives {
-    vBTooltip: typeof import('bootstrap-vue-next/directives/BTooltip')['vBTooltip']
-  }
 }

@@ -192,26 +192,29 @@ const vacations = ref<Vacation[]>([])
 
 onMounted(async () => {
   await loadVacationData()
-  storageService.syncAll()
 })
 
 async function loadVacationData() {
   isLoading.value = true
   try {
-    const settings = await doctorApi.getVacationSettings()
-    if (settings) {
-      totalVacationDays.value = settings.total_days || 25
+    // 1. Try to get settings (with fallback)
+    try {
+      const settings = await doctorApi.getVacationSettings()
+      if (settings) totalVacationDays.value = settings.total_days || 25
+    } catch (err) {
+      console.warn('Could not fetch remote vacation settings, using defaults.')
     }
 
+    // 2. Load vacations (storageService handles the fallback internally)
     const data = await storageService.getVacations()
     vacations.value = data.map((v: any) => ({
       id: v.id,
       start_date: v.start_date,
       end_date: v.end_date,
       reason: v.reason,
-      days: v.days
+      days: v.days || 1 // Fallback if days not calculated
     }))
-    usedVacationDays.value = vacations.value.reduce((sum, v) => sum + v.days, 0)
+    usedVacationDays.value = vacations.value.reduce((sum, v) => sum + (v.days || 0), 0)
   } catch (e) {
     console.error('Failed to load vacation data:', e)
   } finally {

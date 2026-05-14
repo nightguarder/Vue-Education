@@ -183,37 +183,60 @@
                 </div>
               </div>
 
-              <div class="d-flex gap-2 mb-4">
-                <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-check-lg me-1"></i> Uložit nastavení
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary"
-                  @click="testConnection"
-                  :disabled="testing"
-                >
-                  <span v-if="testing" class="spinner-border spinner-border-sm me-1"></span>
-                  <i v-else class="bi bi-plug me-1"></i>
-                  {{ testing ? 'Testování...' : 'Test OMLX' }}
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-outline-info"
-                  @click="testDbConnection"
-                  :disabled="dbTesting"
-                >
-                  <span v-if="dbTesting" class="spinner-border spinner-border-sm me-1"></span>
-                  <i v-else class="bi bi-database me-1"></i>
-                  Test DB
-                </button>
-                 <!-- Sync & Status Indicator -->
-    <div class="ms-3 d-flex align-items-center gap-2">
-      <div v-if="storageService.pendingCount.value > 0" class="sync-indicator d-flex align-items-center gap-1 text-muted small">
-        <i class="bi bi-cloud-arrow-up" :class="{ 'syncing-animation': storageService.isSyncing.value }"></i>
-        <span>{{ storageService.pendingCount.value }} {{ getPendingText(storageService.pendingCount.value) }}</span>
-      </div>
-    </div>
+              <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Uložit
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    @click="testConnection"
+                    :disabled="testing"
+                  >
+                    <span v-if="testing" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-plug me-1"></i>
+                    Test OMLX
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-info"
+                    @click="testDbConnection"
+                    :disabled="dbTesting || storageService.useOffline.value"
+                  >
+                    <span v-if="dbTesting" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-database me-1"></i>
+                    Test DB
+                  </button>
+                </div>
+
+                <div class="d-flex gap-3 align-items-center ms-md-auto">
+                  <div class="form-check form-switch mb-0">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      id="useOffline" 
+                      v-model="storageService.useOffline.value"
+                    >
+                    <label class="form-check-label small" for="useOffline">Offline režim</label>
+                  </div>
+                  
+                  <div class="form-check form-switch mb-0">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      id="autoSync" 
+                      v-model="storageService.autoSync.value"
+                    >
+                    <label class="form-check-label small" for="autoSync">Auto-sync</label>
+                  </div>
+                </div>
+
+                <!-- Sync & Status Indicator -->
+                <div v-if="storageService.pendingCount.value > 0" class="d-flex align-items-center gap-1 text-muted small">
+                  <i class="bi bi-cloud-arrow-up" :class="{ 'syncing-animation': storageService.isSyncing.value }"></i>
+                  <span>{{ storageService.pendingCount.value }} {{ getPendingText(storageService.pendingCount.value) }}</span>
+                </div>
               </div>
               
             </form>
@@ -297,6 +320,12 @@ onMounted(async () => {
 })
 
 async function fetchModels() {
+  // Prevent Mixed Content errors: Browsers block HTTPS -> HTTP (localhost)
+  if (window.location.protocol === 'https:' && !config.port.toString().includes('https')) {
+    console.warn('OMLX: Local fetch skipped to avoid Mixed Content block on HTTPS.')
+    return
+  }
+
   loadingModels.value = true
   try {
     const response = await fetch(`http://127.0.0.1:${config.port}/v1/models`, {
@@ -319,6 +348,11 @@ async function fetchModels() {
 }
 
 async function fetchTranscriptModels() {
+  // Prevent Mixed Content errors
+  if (window.location.protocol === 'https:' && !config.port.toString().includes('https')) {
+    return
+  }
+
   loadingTranscriptModels.value = true
   try {
     const response = await fetch(`http://127.0.0.1:${config.port}/v1/models`, {
